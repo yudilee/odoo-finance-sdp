@@ -14,7 +14,8 @@ services:
       - APP_ENV=production
       - APP_KEY=base64:vtYRZg/ynlWETTu1NiEhNPf2h24J8BBrKRdwkqYXD6c= # Use your real APP_KEY
       - APP_DEBUG=false
-      - APP_URL=http://localhost:8005
+      - APP_URL=http://192.168.99.123:8005
+      - SERVER_NAME=:80
       - DB_CONNECTION=sqlite
     volumes:
       - cash_bank_data:/app/database
