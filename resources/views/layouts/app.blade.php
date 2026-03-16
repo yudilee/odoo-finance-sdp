@@ -3,10 +3,13 @@
 <head>
     <script>
         // Check for saved theme preference or default to dark
-        if (localStorage.getItem('theme') === 'light') {
+        const theme = localStorage.getItem('theme') || 'dark';
+        if (theme === 'light') {
             document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
         } else {
             document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
         }
     </script>
     <meta charset="UTF-8">
@@ -23,15 +26,22 @@
         sidebarOpen: true,
         darkMode: document.documentElement.classList.contains('dark')
     }"
-    x-init="$watch('darkMode', val => {
-        if (val) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    })">
+    x-init="
+        $watch('darkMode', val => {
+            if (val) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        // Sync initial state to document element
+        document.documentElement.classList.toggle('dark', darkMode);
+        document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+    ">
 
     {{-- Sidebar --}}
     <aside :class="sidebarOpen ? 'w-64' : 'w-16'" class="bg-slate-800 dark:bg-slate-950 text-white flex flex-col transition-all duration-300 fixed h-full z-30">
@@ -66,7 +76,7 @@
                 <span x-show="sidebarOpen" x-cloak>Journal Entries</span>
             </a>
 
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->check() && auth()->user()->role === 'admin')
             <div class="pt-4 pb-2">
                 <p x-show="sidebarOpen" x-cloak class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Admin</p>
             </div>
@@ -112,6 +122,7 @@
         </div>
 
         {{-- User --}}
+        @if(auth()->check())
         <div class="p-3 border-t border-slate-700">
             <div class="flex items-center gap-3 px-3 py-2">
                 <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
@@ -130,6 +141,7 @@
                 </button>
             </form>
         </div>
+        @endif
     </aside>
 
     {{-- Main Content --}}
