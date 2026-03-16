@@ -1,0 +1,31 @@
+services:
+  app:
+    image: cash-bank:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cash-bank
+    restart: unless-stopped
+    ports:
+      - "8005:80"        # Map to port 8005 or your preference
+      - "443:443"
+    environment:
+      - APP_NAME=CashBank
+      - APP_ENV=production
+      - APP_KEY=base64:vtYRZg/ynlWETTu1NiEhNPf2h24J8BBrKRdwkqYXD6c= # Use your real APP_KEY
+      - APP_DEBUG=false
+      - APP_URL=http://localhost:8005
+      - DB_CONNECTION=sqlite
+    volumes:
+      - cash_bank_data:/app/database
+      - cash_bank_storage:/app/storage
+    networks:
+      - cash_bank_net
+
+networks:
+  cash_bank_net:
+    driver: bridge
+
+volumes:
+  cash_bank_data:
+  cash_bank_storage:
