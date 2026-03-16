@@ -83,61 +83,66 @@ class OdooService
                 'line_ids/credit',                 // 10: Credit
             ];
 
-            $result = $this->execute('account.move', 'export_data', [$moveIds, $exportFields]);
-
-            if (!isset($result['datas'])) {
-                return ['success' => false, 'message' => 'Unexpected response format', 'data' => []];
-            }
-
-            // Process rows - collect all entries with all their lines first
+            // Chunked export_data to prevent memory issues for large moves
             $entries = [];
-            $currentEntry = null;
+            $chunkSize = 500;
+            $moveIdsChunks = array_chunk($moveIds, $chunkSize);
 
-            foreach ($result['datas'] as $row) {
-                $moveName = $row[0] ?? '';
-                $accountDisplay = $row[6] ?? '';
-                
-                // Extract account code from display name
-                $accountCode = '';
-                $accountName = '';
-                if (!empty($accountDisplay)) {
-                    $parts = explode(' ', trim($accountDisplay), 2);
-                    $accountCode = $parts[0] ?? '';
-                    $accountName = $parts[1] ?? '';
+            foreach ($moveIdsChunks as $chunk) {
+                $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
+
+                if (!isset($result['datas'])) {
+                    continue;
                 }
 
-                // If move_name is non-empty, this is a new entry header row
-                if (!empty($moveName)) {
-                    if ($currentEntry !== null) {
-                        $entries[] = $currentEntry;
+                $currentEntry = null;
+
+                foreach ($result['datas'] as $row) {
+                    $moveName = $row[0] ?? '';
+                    $accountDisplay = $row[6] ?? '';
+                    
+                    // Extract account code from display name
+                    $accountCode = '';
+                    $accountName = '';
+                    if (!empty($accountDisplay)) {
+                        $parts = explode(' ', trim($accountDisplay), 2);
+                        $accountCode = $parts[0] ?? '';
+                        $accountName = $parts[1] ?? '';
                     }
-                    $currentEntry = [
-                        'move_name' => $moveName,
-                        'date' => $row[1] ?? '',
-                        'journal_name' => $row[2] ?? '',
-                        'partner_name' => $row[3] ?? '',
-                        'ref' => $row[4] ?? '',
-                        'amount_total_signed' => (float)($row[5] ?? 0),
-                        'lines' => [],
-                    ];
+
+                    // If move_name is non-empty, this is a new entry header row
+                    if (!empty($moveName)) {
+                        if ($currentEntry !== null) {
+                            $entries[] = $currentEntry;
+                        }
+                        $currentEntry = [
+                            'move_name' => $moveName,
+                            'date' => $row[1] ?? '',
+                            'journal_name' => $row[2] ?? '',
+                            'partner_name' => $row[3] ?? '',
+                            'ref' => $row[4] ?? '',
+                            'amount_total_signed' => (float)($row[5] ?? 0),
+                            'lines' => [],
+                        ];
+                    }
+
+                    // Add line item
+                    if ($currentEntry !== null) {
+                        $currentEntry['lines'][] = [
+                            'account_code' => $accountCode,
+                            'account_name' => $accountName,
+                            'display_name' => $row[7] ?? '',
+                            'ref' => $row[8] ?? '',
+                            'debit' => (float)($row[9] ?? 0),
+                            'credit' => (float)($row[10] ?? 0),
+                        ];
+                    }
                 }
 
-                // Add line item
+                // Don't forget the last entry of this chunk
                 if ($currentEntry !== null) {
-                    $currentEntry['lines'][] = [
-                        'account_code' => $accountCode,
-                        'account_name' => $accountName,
-                        'display_name' => $row[7] ?? '',
-                        'ref' => $row[8] ?? '',
-                        'debit' => (float)($row[9] ?? 0),
-                        'credit' => (float)($row[10] ?? 0),
-                    ];
+                    $entries[] = $currentEntry;
                 }
-            }
-
-            // Don't forget the last entry
-            if ($currentEntry !== null) {
-                $entries[] = $currentEntry;
             }
 
             // Filter ENTRIES (not lines) by account codes:

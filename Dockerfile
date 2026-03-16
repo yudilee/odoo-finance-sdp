@@ -15,6 +15,11 @@ RUN npm run build
 # Stage 3: Final Production Image
 FROM dunglas/frankenphp:1-php8.3-alpine AS final
 
+# Set PHP Production settings
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/memory_limit = 128M/memory_limit = 512M/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/max_execution_time = 30/max_execution_time = 300/g' "$PHP_INI_DIR/php.ini"
+
 # Install PHP extensions required by Laravel & Odoo interaction
 RUN install-php-extensions \
     bcmath \
