@@ -30,11 +30,7 @@ Route::middleware('auth')->group(function () {
 
     // Import Data Routes
     Route::get('/import', [ImportController::class, 'index'])->name('import');
-    Route::post('/import/odoo/config', [ImportController::class, 'saveOdooConfig'])->name('import.odoo.config');
-    Route::post('/import/odoo/test', [ImportController::class, 'testOdooConnection'])->name('import.odoo.test');
     Route::post('/import/odoo/sync', [ImportController::class, 'syncOdoo'])->name('import.odoo.sync');
-    Route::get('/import/odoo/schedule', [ImportController::class, 'getSchedule'])->name('import.odoo.schedule.get');
-    Route::post('/import/odoo/schedule', [ImportController::class, 'saveSchedule'])->name('import.odoo.schedule.save');
     Route::get('/import/history', [ImportController::class, 'history'])->name('import.history');
 
     // Journal Entries
@@ -47,6 +43,7 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/empty-database', [SettingController::class, 'emptyDatabase'])->name('settings.empty-database');
 
     // ──────────────────────────────────────────
     // Admin Routes (requires admin role)
@@ -76,5 +73,11 @@ Route::middleware('auth')->group(function () {
         Route::post('sessions/settings', [\App\Http\Controllers\Admin\SessionController::class, 'updateSettings'])->name('sessions.settings');
         Route::post('sessions/cleanup', [\App\Http\Controllers\Admin\SessionController::class, 'cleanup'])->name('sessions.cleanup');
         Route::delete('sessions/{session}', [\App\Http\Controllers\Admin\SessionController::class, 'terminate'])->name('sessions.terminate');
+
+        // Odoo Settings (Relocated)
+        Route::post('odoo/config', [SettingController::class, 'saveOdooConfig'])->name('settings.odoo.config');
+        Route::post('odoo/test', [SettingController::class, 'testOdooConnection'])->name('settings.odoo.test');
+        Route::get('odoo/schedule', [SettingController::class, 'getSchedule'])->name('settings.odoo.schedule.get');
+        Route::post('odoo/schedule', [SettingController::class, 'saveSchedule'])->name('settings.odoo.schedule.save');
     });
 });

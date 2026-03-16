@@ -17,8 +17,6 @@ class ImportController extends Controller
      */
     public function index()
     {
-        $odooConfig = Setting::getOdooConfig();
-        
         // Get stored account filter settings
         $accountCodes = json_decode(Setting::get('account_codes', '[]'), true) ?: [
             '111002', '112003', '112012', '112041', '112049'
@@ -33,38 +31,9 @@ class ImportController extends Controller
             '112049' => 'BCA Bengkel',
         ];
         
-        return view('import', compact('odooConfig', 'accountCodes', 'availableAccounts'));
+        return view('import', compact('accountCodes', 'availableAccounts'));
     }
 
-    /**
-     * Save Odoo configuration
-     */
-    public function saveOdooConfig(Request $request)
-    {
-        $request->validate([
-            'odoo_url' => 'required|url',
-            'odoo_db' => 'required|string',
-            'odoo_user' => 'required|string',
-            'odoo_password' => 'required|string',
-        ]);
-
-        Setting::set('odoo_url', $request->input('odoo_url'));
-        Setting::set('odoo_db', $request->input('odoo_db'));
-        Setting::set('odoo_user', $request->input('odoo_user'));
-        Setting::set('odoo_password', $request->input('odoo_password'));
-
-        return response()->json(['success' => true, 'message' => 'Configuration saved successfully.']);
-    }
-
-    /**
-     * Test Odoo connection
-     */
-    public function testOdooConnection()
-    {
-        $odoo = new OdooService();
-        $result = $odoo->testConnection();
-        return response()->json($result);
-    }
 
     /**
      * Sync journal entries from Odoo
@@ -79,6 +48,12 @@ class ImportController extends Controller
         ]);
 
         try {
+            // Empty database if configured
+            if (Setting::get('empty_before_sync', '0') === '1') {
+                JournalLine::query()->delete();
+                JournalEntry::query()->delete();
+            }
+
             $odoo = new OdooService();
             
             $accountCodes = $request->input('account_codes', []);
@@ -197,38 +172,6 @@ class ImportController extends Controller
         return $count;
     }
 
-    /**
-     * Get schedule configuration
-     */
-    public function getSchedule(): JsonResponse
-    {
-        return response()->json([
-            'enabled' => Setting::getValue('odoo_schedule_enabled', 'false') === 'true',
-            'interval' => Setting::getValue('odoo_schedule_interval', 'daily'),
-            'last_sync' => Setting::getValue('odoo_last_sync', null),
-        ]);
-    }
-
-    /**
-     * Save schedule configuration
-     */
-    public function saveSchedule(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'enabled' => 'required|boolean',
-            'interval' => 'required|in:hourly,every_2_hours,every_4_hours,every_6_hours,every_12_hours,daily',
-        ]);
-
-        Setting::setValue('odoo_schedule_enabled', $validated['enabled'] ? 'true' : 'false');
-        Setting::setValue('odoo_schedule_interval', $validated['interval']);
-
-        return response()->json([
-            'success' => true,
-            'message' => $validated['enabled'] 
-                ? "Auto-sync enabled ({$validated['interval']})" 
-                : 'Auto-sync disabled',
-        ]);
-    }
 
     /**
      * Get import history
