@@ -151,7 +151,7 @@
                     <table style="width: 100%; table-layout: auto;">
                         <tr>
                             <td class="info-label" style="width: 130px;">Accounting Date</td>
-                            <td>{{ \Carbon\Carbon::parse($entry->date)->translatedFormat('d F Y') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($entry->date)->locale('id')->isoFormat('D MMMM YYYY') }}</td>
                         </tr>
                         <tr>
                             <td class="info-label" style="width: 130px;">Journal</td>
