@@ -4,7 +4,61 @@
 @section('subtitle', 'Imported journal entries from Odoo')
 
 @section('content')
-<div x-data="{ expandedEntry: null }">
+<div x-data="{ 
+    expandedEntry: null,
+    columns: {
+        name: { visible: true, width: '180px', label: 'Name' },
+        date: { visible: true, width: '100px', label: 'Date' },
+        partner: { visible: true, width: '150px', label: 'Partner' },
+        ref: { visible: true, width: '120px', label: 'Ref' },
+        total: { visible: true, width: '120px', label: 'Amount' },
+        account: { visible: true, width: '180px', label: 'Account' },
+        desc: { visible: true, width: '200px', label: 'Description' },
+        line_ref: { visible: true, width: '140px', label: 'Line Ref' },
+        debit: { visible: true, width: '100px', label: 'Debit' },
+        credit: { visible: true, width: '100px', label: 'Credit' }
+    },
+    init() {
+        const saved = localStorage.getItem('journal_column_settings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            Object.keys(this.columns).forEach(key => {
+                if (parsed[key]) {
+                    this.columns[key].visible = parsed[key].visible;
+                    this.columns[key].width = parsed[key].width;
+                }
+            });
+        }
+        this.$watch('columns', value => {
+            localStorage.setItem('journal_column_settings', JSON.stringify(value));
+        }, { deep: true });
+    },
+    resize(key, event) {
+        const startX = event.pageX;
+        const startWidth = parseInt(this.columns[key].width);
+        
+        const mouseMoveHandler = (e) => {
+            const diff = e.pageX - startX;
+            const newWidth = Math.max(60, startWidth + diff);
+            this.columns[key].width = newWidth + 'px';
+        };
+        
+        const mouseUpHandler = () => {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+        };
+        
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    },
+    get visibleColumnCount() {
+        return Object.values(this.columns).filter(c => c.visible).length + 1;
+    }
+}">
 
     {{-- Stats Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -42,9 +96,26 @@
                     @endif
                 </div>
             </div>
-            <button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                <svg class="w-5 h-5 transition-transform duration-300" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
+            <div class="flex items-center gap-2">
+                {{-- Column Settings Dropdown --}}
+                <div x-data="{ open: false }" class="relative" @click.stop="">
+                    <button @click="open = !open" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <span>Columns</span>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[60] p-2">
+                        <template x-for="(col, key) in columns" :key="key">
+                            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors">
+                                <input type="checkbox" x-model="col.visible" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 dark:bg-slate-900 dark:border-slate-600">
+                                <span class="text-xs text-slate-700 dark:text-slate-300" x-text="col.label"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+                <button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="w-5 h-5 transition-transform duration-300" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
         </div>
 
         <div x-show="filtersOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="p-4 border-t border-slate-200 dark:border-slate-700">
@@ -134,56 +205,96 @@
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto max-h-[75vh]">
             <table class="w-full text-sm">
-                <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 select-none">
                     <tr>
                         <th class="px-3 py-3 w-10 text-center border-b border-slate-200 dark:border-slate-700 sticky top-0 left-0 bg-slate-50 dark:bg-slate-900 z-50">
                             <input type="checkbox" id="selectAllCheckbox" title="Select All" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer mt-0.5 dark:bg-slate-800 dark:border-slate-600">
                         </th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 left-10 bg-slate-50 dark:bg-slate-900 z-50">
+                        
+                        {{-- Name --}}
+                        <th x-show="columns.name.visible" :style="{ width: columns.name.width, minWidth: columns.name.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 left-10 bg-slate-50 dark:bg-slate-900 z-50">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'move_name', 'dir' => request('sort') === 'move_name' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center hover:text-emerald-600 transition-colors">
                                 Name
                                 @if(request('sort', 'date') === 'move_name')
                                     <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('dir', 'desc') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
                                 @endif
                             </a>
+                            <div @mousedown="resize('name', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
                         </th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+
+                        {{-- Date --}}
+                        <th x-show="columns.date.visible" :style="{ width: columns.date.width, minWidth: columns.date.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'date', 'dir' => request('sort', 'date') === 'date' && request('dir', 'desc') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center hover:text-emerald-600 transition-colors">
                                 Date
                                 @if(request('sort', 'date') === 'date')
                                     <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('dir', 'desc') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
                                 @endif
                             </a>
+                            <div @mousedown="resize('date', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
                         </th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+
+                        {{-- Partner --}}
+                        <th x-show="columns.partner.visible" :style="{ width: columns.partner.width, minWidth: columns.partner.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'partner_name', 'dir' => request('sort') === 'partner_name' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center hover:text-emerald-600 transition-colors">
                                 Partner
                                 @if(request('sort') === 'partner_name')
                                     <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('dir') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
                                 @endif
                             </a>
+                            <div @mousedown="resize('partner', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
                         </th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+
+                        {{-- Ref --}}
+                        <th x-show="columns.ref.visible" :style="{ width: columns.ref.width, minWidth: columns.ref.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'ref', 'dir' => request('sort') === 'ref' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center hover:text-emerald-600 transition-colors">
                                 Ref
                                 @if(request('sort') === 'ref')
                                     <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('dir') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
                                 @endif
                             </a>
+                            <div @mousedown="resize('ref', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
                         </th>
-                        <th class="px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+
+                        {{-- Amount Total --}}
+                        <th x-show="columns.total.visible" :style="{ width: columns.total.width, minWidth: columns.total.width }" class="group relative px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'amount_total_signed', 'dir' => request('sort') === 'amount_total_signed' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center justify-end hover:text-emerald-600 transition-colors">
-                                Amount Total
+                                Amount
                                 @if(request('sort') === 'amount_total_signed')
                                     <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('dir') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
                                 @endif
                             </a>
+                            <div @mousedown="resize('total', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
                         </th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">Account</th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">Line Description</th>
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">Line Ref</th>
-                        <th class="px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">Debit</th>
-                        <th class="px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">Credit</th>
+
+                        {{-- Account --}}
+                        <th x-show="columns.account.visible" :style="{ width: columns.account.width, minWidth: columns.account.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+                            Account
+                            <div @mousedown="resize('account', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
+                        </th>
+
+                        {{-- Line Description --}}
+                        <th x-show="columns.desc.visible" :style="{ width: columns.desc.width, minWidth: columns.desc.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+                            Description
+                            <div @mousedown="resize('desc', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
+                        </th>
+
+                        {{-- Line Ref --}}
+                        <th x-show="columns.line_ref.visible" :style="{ width: columns.line_ref.width, minWidth: columns.line_ref.width }" class="group relative px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+                            Line Ref
+                            <div @mousedown="resize('line_ref', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
+                        </th>
+
+                        {{-- Debit --}}
+                        <th x-show="columns.debit.visible" :style="{ width: columns.debit.width, minWidth: columns.debit.width }" class="group relative px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+                            Debit
+                            <div @mousedown="resize('debit', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
+                        </th>
+
+                        {{-- Credit --}}
+                        <th x-show="columns.credit.visible" :style="{ width: columns.credit.width, minWidth: columns.credit.width }" class="group relative px-3 py-3 text-right font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-40">
+                            Credit
+                            <div @mousedown="resize('credit', $event)" class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group-hover:bg-emerald-500/30 transition-colors"></div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -195,7 +306,7 @@
                                 <input type="checkbox" name="selected_ids[]" value="{{ $entry->id }}" class="entry-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer mt-1 dark:bg-slate-800 dark:border-slate-600 p-0">
                             </td>
                             {{-- Entry-level columns only on first line --}}
-                            <td class="px-3 py-2 font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap align-top sticky left-10 bg-white dark:bg-slate-800 z-10" rowspan="{{ $entry->lines->count() }}">
+                            <td x-show="columns.name.visible" :style="{ width: columns.name.width, minWidth: columns.name.width }" class="px-3 py-2 font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap align-top sticky left-10 bg-white dark:bg-slate-800 z-10" rowspan="{{ $entry->lines->count() }}">
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('journals.show', $entry) }}" class="hover:underline">{{ $entry->move_name }}</a>
                                     <a href="{{ route('journals.print', $entry) }}" target="_blank" title="Print PDF" class="text-slate-400 hover:text-indigo-600 transition-colors">
@@ -203,31 +314,35 @@
                                     </a>
                                 </div>
                             </td>
-                            <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap align-top" rowspan="{{ $entry->lines->count() }}">{{ \Carbon\Carbon::parse($entry->date)->format('Y-m-d') }}</td>
-                            <td class="px-3 py-2 text-xs align-top" rowspan="{{ $entry->lines->count() }}">{{ $entry->partner_name ?? '' }}</td>
-                            <td class="px-3 py-2 text-xs text-slate-500 align-top" rowspan="{{ $entry->lines->count() }}">{{ $entry->ref ?? '' }}</td>
-                            <td class="px-3 py-2 text-right font-mono text-xs font-semibold align-top whitespace-nowrap" rowspan="{{ $entry->lines->count() }}">
+                            <td x-show="columns.date.visible" :style="{ width: columns.date.width, minWidth: columns.date.width }" class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap align-top" rowspan="{{ $entry->lines->count() }}">{{ \Carbon\Carbon::parse($entry->date)->format('Y-m-d') }}</td>
+                            <td x-show="columns.partner.visible" :style="{ width: columns.partner.width, minWidth: columns.partner.width }" class="px-3 py-2 text-xs align-top" rowspan="{{ $entry->lines->count() }}">{{ $entry->partner_name ?? '' }}</td>
+                            <td x-show="columns.ref.visible" :style="{ width: columns.ref.width, minWidth: columns.ref.width }" class="px-3 py-2 text-xs text-slate-500 align-top" rowspan="{{ $entry->lines->count() }}">{{ $entry->ref ?? '' }}</td>
+                            <td x-show="columns.total.visible" :style="{ width: columns.total.width, minWidth: columns.total.width }" class="px-3 py-2 text-right font-mono text-xs font-semibold align-top whitespace-nowrap" rowspan="{{ $entry->lines->count() }}">
                                 {{ number_format($entry->amount_total_signed, 2) }}
                             </td>
                             @endif
                             {{-- Line-level columns on every row --}}
-                            <td class="px-3 py-2 whitespace-nowrap">
+                            <td x-show="columns.account.visible" :style="{ width: columns.account.width, minWidth: columns.account.width }" class="px-3 py-2 whitespace-nowrap overflow-hidden">
                                 <span class="font-mono text-xs text-violet-600 dark:text-violet-400">{{ $line->account_code }}</span>
-                                <span class="text-xs text-slate-500 ml-1">{{ $line->account_name }}</span>
+                                <span class="text-xs text-slate-500 ml-1 truncate block">{{ $line->account_name }}</span>
                             </td>
-                            <td class="px-3 py-2 text-xs max-w-[200px]"><div class="truncate" title="{{ $line->display_name ?: '' }}">{{ $line->display_name ?: '' }}</div></td>
-                            <td class="px-3 py-2 text-xs text-slate-500 max-w-[140px]"><div class="truncate" title="{{ $line->ref ?: '' }}">{{ $line->ref ?: '' }}</div></td>
-                            <td class="px-3 py-2 text-right font-mono text-xs {{ $line->debit > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-300 dark:text-slate-700' }}">
+                            <td x-show="columns.desc.visible" :style="{ width: columns.desc.width, minWidth: columns.desc.width }" class="px-3 py-2 text-xs">
+                                <div class="truncate" title="{{ $line->display_name ?: '' }}">{{ $line->display_name ?: '' }}</div>
+                            </td>
+                            <td x-show="columns.line_ref.visible" :style="{ width: columns.line_ref.width, minWidth: columns.line_ref.width }" class="px-3 py-2 text-xs text-slate-500">
+                                <div class="truncate" title="{{ $line->ref ?: '' }}">{{ $line->ref ?: '' }}</div>
+                            </td>
+                            <td x-show="columns.debit.visible" :style="{ width: columns.debit.width, minWidth: columns.debit.width }" class="px-3 py-2 text-right font-mono text-xs {{ $line->debit > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-300 dark:text-slate-700' }}">
                                 {{ $line->debit > 0 ? number_format($line->debit, 2) : '' }}
                             </td>
-                            <td class="px-3 py-2 text-right font-mono text-xs {{ $line->credit > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-300 dark:text-slate-700' }}">
+                            <td x-show="columns.credit.visible" :style="{ width: columns.credit.width, minWidth: columns.credit.width }" class="px-3 py-2 text-right font-mono text-xs {{ $line->credit > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-300 dark:text-slate-700' }}">
                                 {{ $line->credit > 0 ? number_format($line->credit, 2) : '' }}
                             </td>
                         </tr>
                         @endforeach
                     @empty
                     <tr>
-                        <td colspan="11" class="px-4 py-12 text-center">
+                        <td :colspan="visibleColumnCount" class="px-4 py-12 text-center">
                             <div class="text-slate-400">
                                 <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 <p class="text-lg font-medium">No journal entries found</p>
