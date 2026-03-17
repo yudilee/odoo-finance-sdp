@@ -23,7 +23,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen flex" 
     x-data="{ 
-        sidebarOpen: true,
+        sidebarOpen: window.innerWidth >= 1280,
         darkMode: document.documentElement.classList.contains('dark')
     }"
     x-init="

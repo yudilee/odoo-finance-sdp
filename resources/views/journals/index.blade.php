@@ -48,73 +48,82 @@
         </div>
 
         <div x-show="filtersOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="p-4 border-t border-slate-200 dark:border-slate-700">
-            <form method="GET" action="{{ route('journals.index') }}" class="flex flex-wrap items-end gap-4">
+            <form method="GET" action="{{ route('journals.index') }}">
             <input type="hidden" name="filter_applied" value="1">
-            
-            {{-- Search --}}
-            <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Move name, partner, reference..."
-                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-            </div>
-            {{-- Date From --}}
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Date From</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}"
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-            </div>
-            {{-- Date To --}}
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Date To</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}"
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-            </div>
-            {{-- Account Filter --}}
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Account</label>
-                <div class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg max-h-[100px] overflow-y-auto min-w-[220px]">
-                    @foreach($accountCodes as $acc)
-                        <label class="flex items-start gap-2 mb-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1 -m-1 rounded transition-colors pr-2">
-                            <input type="checkbox" name="accounts[]" value="{{ $acc->account_code }}" {{ in_array($acc->account_code, $selectedAccounts) ? 'checked' : '' }} class="mt-0.5 text-emerald-500 rounded border-slate-300 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800">
-                            <span class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-tight">
-                                <span class="text-emerald-600 dark:text-emerald-400 font-mono">{{ $acc->account_code }}</span><br>
-                                <span class="text-[10px] text-slate-500 font-normal">{{ $acc->account_name }}</span>
-                            </span>
-                        </label>
-                    @endforeach
+
+            {{-- Row 1: Search + Dates + Account --}}
+            <div class="flex flex-wrap items-end gap-3 mb-3">
+                {{-- Search --}}
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Move name, partner, reference..."
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                </div>
+                {{-- Date From --}}
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Date From</label>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}"
+                        class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                </div>
+                {{-- Date To --}}
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Date To</label>
+                    <input type="date" name="date_to" value="{{ request('date_to') }}"
+                        class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                </div>
+                {{-- Account Filter --}}
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Account</label>
+                    <div class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg max-h-[100px] overflow-y-auto min-w-[200px]">
+                        @foreach($accountCodes as $acc)
+                            <label class="flex items-start gap-2 mb-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1 -m-1 rounded transition-colors pr-2">
+                                <input type="checkbox" name="accounts[]" value="{{ $acc->account_code }}" {{ in_array($acc->account_code, $selectedAccounts) ? 'checked' : '' }} class="mt-0.5 text-emerald-500 rounded border-slate-300 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800">
+                                <span class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-tight">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-mono">{{ $acc->account_code }}</span><br>
+                                    <span class="text-[10px] text-slate-500 font-normal">{{ $acc->account_name }}</span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
             </div>
-            {{-- Journal Filter --}}
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Journal</label>
-                <select name="journal" class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-                    <option value="">All Journals</option>
-                    @foreach($journalNames as $jn)
-                        <option value="{{ $jn }}" {{ request('journal') == $jn ? 'selected' : '' }}>{{ $jn }}</option>
-                    @endforeach
-                </select>
-            </div>
-            {{-- Flow Filter --}}
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Cash/Bank Flow</label>
-                <select name="flow_type" class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-                    <option value="all" {{ $flowType === 'all' ? 'selected' : '' }}>All Flows</option>
-                    <option value="debit" {{ $flowType === 'debit' ? 'selected' : '' }}>Debit Only (Inflow)</option>
-                    <option value="credit" {{ $flowType === 'credit' ? 'selected' : '' }}>Credit Only (Outflow)</option>
-                </select>
-            </div>
-            
-            <div class="flex gap-2 items-end pb-[2px]">
-                <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">Filter</button>
-                <a href="{{ route('journals.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
-                <a href="{{ route('journals.print-all', request()->all()) }}" target="_blank" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1 ml-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Print All (PDF)
-                </a>
-                <button type="submit" form="bulkPrintForm" id="printSelectedBtn" class="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1 ml-2 opacity-50 cursor-not-allowed" disabled>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Print Selected (<span id="selectedCount">0</span>)
-                </button>
+
+            {{-- Row 2: Journal + Flow + Buttons --}}
+            <div class="flex flex-wrap items-end gap-3">
+                {{-- Journal Filter --}}
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Journal</label>
+                    <select name="journal" class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                        <option value="">All Journals</option>
+                        @foreach($journalNames as $jn)
+                            <option value="{{ $jn }}" {{ request('journal') == $jn ? 'selected' : '' }}>{{ $jn }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                {{-- Flow Filter --}}
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Cash/Bank Flow</label>
+                    <select name="flow_type" class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                        <option value="all" {{ $flowType === 'all' ? 'selected' : '' }}>All Flows</option>
+                        <option value="debit" {{ $flowType === 'debit' ? 'selected' : '' }}>Debit Only (Inflow)</option>
+                        <option value="credit" {{ $flowType === 'credit' ? 'selected' : '' }}>Credit Only (Outflow)</option>
+                    </select>
+                </div>
+                {{-- Action Buttons --}}
+                <div class="flex gap-2 items-end pb-[2px]">
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">Filter</button>
+                    <a href="{{ route('journals.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
+                    <a href="{{ route('journals.print-all', request()->all()) }}" target="_blank" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        <span class="hidden sm:inline">Print All (PDF)</span>
+                        <span class="sm:hidden">Print All</span>
+                    </a>
+                    <button type="submit" form="bulkPrintForm" id="printSelectedBtn" class="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        <span class="hidden sm:inline">Print Selected (<span id="selectedCount">0</span>)</span>
+                        <span class="sm:hidden">Selected (<span id="selectedCountSm">0</span>)</span>
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -206,8 +215,8 @@
                                 <span class="font-mono text-xs text-violet-600 dark:text-violet-400">{{ $line->account_code }}</span>
                                 <span class="text-xs text-slate-500 ml-1">{{ $line->account_name }}</span>
                             </td>
-                            <td class="px-3 py-2 text-xs">{{ $line->display_name ?: '' }}</td>
-                            <td class="px-3 py-2 text-xs text-slate-500">{{ $line->ref ?: '' }}</td>
+                            <td class="px-3 py-2 text-xs max-w-[200px]"><div class="truncate" title="{{ $line->display_name ?: '' }}">{{ $line->display_name ?: '' }}</div></td>
+                            <td class="px-3 py-2 text-xs text-slate-500 max-w-[140px]"><div class="truncate" title="{{ $line->ref ?: '' }}">{{ $line->ref ?: '' }}</div></td>
                             <td class="px-3 py-2 text-right font-mono text-xs {{ $line->debit > 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-300 dark:text-slate-700' }}">
                                 {{ $line->debit > 0 ? number_format($line->debit, 2) : '' }}
                             </td>
@@ -263,10 +272,12 @@
         const checkboxes = document.querySelectorAll('.entry-checkbox');
         const printBtn = document.getElementById('printSelectedBtn');
         const countSpan = document.getElementById('selectedCount');
+        const countSpanSm = document.getElementById('selectedCountSm');
 
         function updateSelection() {
             const checkedCount = document.querySelectorAll('.entry-checkbox:checked').length;
             if (countSpan) countSpan.textContent = checkedCount;
+            if (countSpanSm) countSpanSm.textContent = checkedCount;
             if (printBtn) {
                 printBtn.disabled = checkedCount === 0;
                 if (checkedCount === 0) {
