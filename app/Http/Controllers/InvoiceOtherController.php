@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\InvoiceOther;
 use App\Models\InvoiceOtherLine;
 use App\Models\ImportLog;
+use App\Models\Setting;
+use App\Models\PrintLog;
 use App\Services\OdooService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceOtherController extends Controller
 {
@@ -263,10 +266,18 @@ class InvoiceOtherController extends Controller
         $invoice->load('lines');
         $invoices = collect([$invoice]);
 
-        foreach ($invoices as $inv) {
-            $log = \App\Models\PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-            $inv->print_count = $log->print_count;
-            $log->increment('print_count');
+        // Track print count (wrap in try-catch for production safety)
+        try {
+            foreach ($invoices as $inv) {
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $inv->print_count = $log->print_count;
+                $log->increment('print_count');
+            }
+        } catch (\Exception $e) {
+            Log::warning('Could not update print log for other invoice: ' . $e->getMessage());
+            foreach ($invoices as $inv) {
+                if (!isset($inv->print_count)) $inv->print_count = 0;
+            }
         }
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-other.pdf', compact('invoices'))
@@ -291,10 +302,17 @@ class InvoiceOtherController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
-        foreach ($invoices as $inv) {
-            $log = \App\Models\PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-            $inv->print_count = $log->print_count;
-            $log->increment('print_count');
+        try {
+            foreach ($invoices as $inv) {
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $inv->print_count = $log->print_count;
+                $log->increment('print_count');
+            }
+        } catch (\Exception $e) {
+            Log::warning('Could not update print log for selected other invoices: ' . $e->getMessage());
+            foreach ($invoices as $inv) {
+                if (!isset($inv->print_count)) $inv->print_count = 0;
+            }
         }
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-other.pdf', compact('invoices'))

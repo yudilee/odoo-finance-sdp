@@ -308,7 +308,7 @@
                         <tr>
                             <td class="info-label">Tanggal</td>
                             <td class="info-colon">:</td>
-                            <td>{{ $invoice->invoice_date->format('d/m/Y') }}</td>
+                            <td>{{ $invoice->invoice_date ? $invoice->invoice_date->format('d/m/Y') : '-' }}</td>
                         </tr>
                         <tr><td colspan="3" style="height: 5px;"></td></tr>
                         <tr>
@@ -386,16 +386,17 @@
                 <td style="width: 55%; vertical-align: top;">
                     <div style="font-size: 10px; margin-bottom: 5px;">
                         <strong>Jatuh Tempo :</strong>
-                        @if($invoice->payment_term)
-                            @php
-                                $days = 0;
-                                if (preg_match('/(\d+)\s*Days?/i', $invoice->payment_term, $m)) {
-                                    $days = (int)$m[1];
-                                }
-                                $dueDate = $invoice->invoice_date->copy()->addDays($days);
-                            @endphp
-                            {{ $dueDate->format('d/m/Y') }}
-                        @endif
+                            @if($invoice->payment_term && $invoice->invoice_date)
+                                @php
+                                    // Calculate due date based on payment terms
+                                    $days = 0;
+                                    if (preg_match('/(\d+)\s*Days?/i', $invoice->payment_term, $m)) {
+                                        $days = (int)$m[1];
+                                    }
+                                    $dueDate = $invoice->invoice_date->copy()->addDays($days);
+                                @endphp
+                                {{ $dueDate->format('d/m/Y') }}
+                            @endif
                     </div>
                     <div class="ketentuan-section">
                         <div class="ketentuan-title">KETENTUAN</div>
