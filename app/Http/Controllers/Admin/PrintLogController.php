@@ -13,6 +13,16 @@ class PrintLogController extends Controller
      */
     public function index(Request $request)
     {
+        // Safety check: If the table is missing (can happen on initial production deploy if migration record is faked)
+        if (!\Illuminate\Support\Facades\Schema::hasTable('print_logs')) {
+            $logs = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+            $sort = 'updated_at';
+            $dir = 'desc';
+            $perPage = 25;
+            session()->now('warning', 'The print tracking database table is missing. Please contact support or run migrations.');
+            return view('admin.print_logs.index', compact('logs', 'sort', 'dir', 'perPage'));
+        }
+
         $query = PrintLog::query();
 
         // Search
