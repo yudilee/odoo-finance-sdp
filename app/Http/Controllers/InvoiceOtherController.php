@@ -283,7 +283,12 @@ class InvoiceOtherController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-other.pdf', compact('invoices'))
                 ->setPaper('a4', 'portrait');
 
-        return $pdf->stream('invoice_other_' . str_replace('/', '_', $invoice->name) . '.pdf');
+        $filename = 'invoice_other_' . str_replace('/', '_', $invoice->name);
+        if ($invoice->print_count > 0) {
+            $filename .= '_DUPLICATE_' . $invoice->print_count;
+        }
+
+        return $pdf->stream($filename . '.pdf');
     }
 
     /**
@@ -318,6 +323,14 @@ class InvoiceOtherController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-other.pdf', compact('invoices'))
                 ->setPaper('a4', 'portrait');
 
-        return $pdf->stream('invoice_other_export_' . now()->format('YmdHis') . '.pdf');
+        $filename = count($invoices) === 1 
+            ? 'invoice_other_' . str_replace('/', '_', $invoices[0]->name) 
+            : 'invoice_other_export_' . now()->format('YmdHis');
+
+        if (count($invoices) === 1 && $invoices[0]->print_count > 0) {
+            $filename .= '_DUPLICATE_' . $invoices[0]->print_count;
+        }
+
+        return $pdf->stream($filename . '.pdf');
     }
 }
