@@ -70,7 +70,7 @@
         this.syncMessage = '';
         this.syncSuccess = null;
         try {
-            const res = await fetch('{{ route('invoice-driver.sync') }}', {
+            const res = await fetch('{{ route('invoice-driver.sync', [], false) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
