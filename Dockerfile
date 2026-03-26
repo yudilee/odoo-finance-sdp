@@ -53,11 +53,8 @@ RUN mkdir -p storage/framework/{cache,sessions,testing,views} \
     && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Setup SQLite database if it doesn't exist
-RUN mkdir -p database/data \
-    && touch database/data/database.sqlite \
-    && chown -R www-data:www-data database/data \
-    && chmod -R 775 database/data
+# Setup initial SQLite database if it doesn't exist (optional, as entrypoint handles it)
+# We now use the storage directory which is already set up and persistent
 
 # Copy and setup entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint
