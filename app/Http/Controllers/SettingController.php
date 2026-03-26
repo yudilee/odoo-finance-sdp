@@ -16,6 +16,7 @@ class SettingController extends Controller
             'empty_before_sync' => Setting::get('empty_before_sync', '0'),
             'default_bc_manager' => Setting::get('default_bc_manager', ''),
             'default_bc_spv'     => Setting::get('default_bc_spv', ''),
+            'enable_pdf_watermark' => Setting::get('enable_pdf_watermark', '1'),
         ];
 
         $odooConfig = Setting::getOdooConfig();
@@ -34,6 +35,7 @@ class SettingController extends Controller
         Setting::set('empty_before_sync', $request->has('empty_before_sync') ? '1' : '0');
         Setting::set('default_bc_manager', $request->input('default_bc_manager', ''));
         Setting::set('default_bc_spv', $request->input('default_bc_spv', ''));
+        Setting::set('enable_pdf_watermark', $request->has('enable_pdf_watermark') ? '1' : '0');
         return back()->with('success', 'Settings updated successfully.');
     }
 

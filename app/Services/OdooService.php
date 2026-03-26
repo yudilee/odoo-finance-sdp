@@ -391,6 +391,135 @@ class OdooService
     }
 
     /**
+     * Fetch Invoice Rental entries from Odoo using export_data
+     * Fetches both "Invoice Sewa Retail" and "Invoice Sewa Subscription" journals
+     */
+    public function fetchInvoiceRentals(string $dateFrom, string $dateTo): array
+    {
+        try {
+            // Search account.move where journal is Invoice Sewa... and state is posted
+            $domain = [
+                ['state', '=', 'posted'],
+                ['journal_id.name', 'in', ['Invoice Sewa Retail', 'Invoice Sewa Subscription']],
+                ['invoice_date', '>=', $dateFrom],
+                ['invoice_date', '<=', $dateTo],
+            ];
+
+            $moveIds = $this->execute('account.move', 'search', [$domain]);
+
+            if (empty($moveIds)) {
+                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice rental entries found.'];
+            }
+
+            // Exactly matching the Excel columns provided:
+            $exportFields = [
+                'name',                                                   // 0: Invoice number (INVRS/... or INVRT/...)
+                'partner_id/name',                                        // 1: Customer name
+                'invoice_date',                                           // 2: Invoice date
+                'invoice_payment_term_id/name',                           // 3: Payment terms
+                'ref',                                                    // 4: Reference
+                'journal_id/name',                                        // 5: Journal name
+                'amount_untaxed',                                         // 6: Subtotal
+                'amount_tax',                                             // 7: Tax
+                'amount_total',                                           // 8: Total
+                'invoice_line_ids/sale_order_id/name',                       // 9: Sale order id name (?) - wait, excel sheet had: 'invoice_line_ids/sale_order_id'
+                'invoice_line_ids/name',                                  // 10: Line description
+                'invoice_line_ids/serial_ids/name',                       // 11: Serial number
+                'invoice_line_ids/sale_order_id/actual_start_rental',        // 12: Actual start rental
+                'invoice_line_ids/sale_order_id/actual_end_rental',          // 13: Actual end rental
+                'invoice_line_ids/sale_order_id/rental_uom',                 // 14: Rental uom
+                'invoice_line_ids/quantity',                               // 15: Quantity
+                'invoice_line_ids/price_unit',                             // 16: Price unit
+                'invoice_line_ids/sale_order_id/customer_name',              // 17: Customer Name (username)
+                'partner_bank_id/acc_number',                             // 18: Bank account number
+                'bc_manager_id/name',                                     // 19: Manager name
+                'bc_spv_id/name',                                         // 20: Supervisor name
+                'partner_id/contact_address',                             // 21: Address (multiline)
+                'partner_id/contact_address_complete',                    // 22: Address (single line)
+            ];
+
+            $entries = [];
+            $chunkSize = 500;
+            $moveIdsChunks = array_chunk($moveIds, $chunkSize);
+
+            foreach ($moveIdsChunks as $chunk) {
+                $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
+
+                if (!isset($result['datas'])) {
+                    continue;
+                }
+
+                $currentEntry = null;
+
+                foreach ($result['datas'] as $row) {
+                    $invoiceName = $row[0] ?? '';
+
+                    if (!empty($invoiceName)) {
+                        if ($currentEntry !== null) {
+                            $entries[] = $currentEntry;
+                        }
+                        $currentEntry = [
+                            'name' => $invoiceName,
+                            'partner_name' => $row[1] ?? '',
+                            'invoice_date' => $row[2] ?? '',
+                            'payment_term' => $row[3] ?? '',
+                            'ref' => $row[4] ?? '',
+                            'journal_name' => $row[5] ?? 'Invoice Rental',
+                            'amount_untaxed' => (float)($row[6] ?? 0),
+                            'amount_tax' => (float)($row[7] ?? 0),
+                            'amount_total' => (float)($row[8] ?? 0),
+                            'partner_bank' => $row[18] ?? '',
+                            'manager_name' => $row[19] ?? '',
+                            'spv_name' => $row[20] ?? '',
+                            'partner_address' => $row[21] ?? '',
+                            'partner_address_complete' => $row[22] ?? '',
+                            'lines' => [],
+                        ];
+                    }
+
+                    if ($currentEntry !== null) {
+                        $soId = $row[9] ?? '';
+                        $lineDesc = $row[10] ?? '';
+                        $serialNum = $row[11] ?? '';
+                        $actualStart = $row[12] ?? '';
+                        $actualEnd = $row[13] ?? '';
+                        $uom = $row[14] ?? '';
+                        $qty = (float)($row[15] ?? 0);
+                        $priceUnit = (float)($row[16] ?? 0);
+                        $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
+
+                        if (!empty($lineDesc) || $qty > 0 || $priceUnit > 0) {
+                            $currentEntry['lines'][] = [
+                                'sale_order_id' => $soId,
+                                'description' => $lineDesc,
+                                'serial_number' => $serialNum,
+                                'actual_start' => $actualStart,
+                                'actual_end' => $actualEnd,
+                                'uom' => $uom,
+                                'quantity' => $qty,
+                                'price_unit' => $priceUnit,
+                                'customer_name' => $customerName,
+                            ];
+                        }
+                    }
+                }
+
+                if ($currentEntry !== null) {
+                    $entries[] = $currentEntry;
+                }
+            }
+
+            return [
+                'success' => true,
+                'data' => $entries,
+                'count' => count($entries),
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+        }
+    }
+
+    /**
      * Authenticate with Odoo and return user ID
      */
     protected function authenticate(): ?int

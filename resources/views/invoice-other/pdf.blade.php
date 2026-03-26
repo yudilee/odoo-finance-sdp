@@ -61,6 +61,18 @@
             text-align: right;
             color: #1a237e;
         }
+        .page-number-container {
+            position: fixed;
+            top: 58px;
+            right: 5px;
+            font-size: 11px;
+            color: #64748b;
+            text-align: right;
+            z-index: 9999;
+        }
+        .page-number-counter::after {
+            content: counter(page);
+        }
         .page-label {
             text-align: right;
             font-size: 9px;
@@ -101,7 +113,6 @@
 
         /* Lines Table */
         .lines-table {
-            border-top: 2px solid #1e293b;
             border-bottom: 2px solid #1e293b;
             margin-top: 15px;
         }
@@ -238,6 +249,7 @@
     </style>
 </head>
 <body>
+    <div class="page-number-container">Hal : <span class="page-number-counter"></span></div>
 
     @foreach($invoices as $invoice)
     @php
@@ -254,92 +266,92 @@
             ? $invoice->spv_name
             : \App\Models\Setting::get('default_bc_spv', '');
     @endphp
-    <div class="invoice-page">
-        @if(isset($invoice->print_count) && $invoice->print_count > 0)
-            <div class="watermark">DUPLICATE - {{ $invoice->print_count }}</div>
-        @endif
-
-        {{-- Company Header --}}
-        <table class="company-header">
-            <tr>
-                <td style="width: 60%;">
-                    @php
-                        $logoPath = public_path('images/logo.png');
-                    @endphp
-                    @if(file_exists($logoPath))
-                        <img src="{{ $logoPath }}" style="max-height: 45px; max-width: 180px; margin-bottom: 5px;" alt="Logo"><br>
-                    @endif
-                    <span class="company-name">PT. SURYA DARMA PERKASA</span><br>
-                    <span class="company-address">
-                        JL. DAAN MOGOT KM.1 NO. 99, JAKARTA BARAT<br>
-                        (021) 56977708, 5661060
-                    </span>
-                </td>
-                <td style="width: 40%;">
-                    <div class="invoice-title">INVOICE</div>
-                    <div class="page-label">Hal : 1</div>
-                </td>
-            </tr>
-        </table>
-
-        {{-- Invoice Info --}}
-        <table class="info-section">
-            <tr>
-                <td style="width: 55%; vertical-align: top;">
-                    {{-- Left: Customer Info --}}
-                    <table style="width: 100%; table-layout: fixed;">
-                        <tr>
-                            <td colspan="3" style="padding-bottom: 5px;">
-                                <span style="font-size: 9px; color: #64748b;">Kepada Yth.</span><br>
-                                <span class="customer-name">{{ $invoice->partner_name }}</span>
-                                <div class="customer-address">{!! nl2br(e($invoice->partner_address ?? $invoice->partner_address_complete ?? '')) !!}</div>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td style="width: 45%; vertical-align: top;">
-                    {{-- Right: Invoice Details --}}
-                    <table style="width: 100%;">
-                        <tr>
-                            <td class="info-label">Nomor</td>
-                            <td class="info-colon">:</td>
-                            <td>{{ $invoice->name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="info-label">Tanggal</td>
-                            <td class="info-colon">:</td>
-                            <td>{{ $invoice->invoice_date ? $invoice->invoice_date->format('d/m/Y') : '-' }}</td>
-                        </tr>
-                        <tr><td colspan="3" style="height: 5px;"></td></tr>
-                        <tr>
-                            <td class="info-label">Kode Pelanggan</td>
-                            <td class="info-colon">:</td>
-                            <td>{{ $invoice->ref ?? '' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="info-label">No. PO/Tanggal</td>
-                            <td class="info-colon">:</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td class="info-label">Kontrak/Tanggal</td>
-                            <td class="info-colon">:</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td class="info-label">Payment Terms</td>
-                            <td class="info-colon">:</td>
-                            <td>{{ $invoice->payment_term ?? '' }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-
-        {{-- Invoice Lines --}}
+    <div class="invoice-page" style="{{ $loop->last ? 'page-break-after: auto;' : 'page-break-after: always;' }}">
         <table class="lines-table">
             <thead>
                 <tr>
+                    <td colspan="{{ $showUnitColumn ? 5 : 4 }}" style="border: none; padding: 0 0 10px 0; background-color: white; position: relative;">
+                        @if(\App\Models\Setting::get('enable_pdf_watermark', '1') === '1' && isset($invoice->print_count) && $invoice->print_count > 0)
+                            <div class="watermark">DUPLICATE - {{ $invoice->print_count }}</div>
+                        @endif
+
+                        {{-- Company Header (Repeated) --}}
+                        <table class="company-header">
+                            <tr>
+                                <td style="width: 60%;">
+                                    @php
+                                        $logoPath = public_path('images/logo.png');
+                                    @endphp
+                                    @if(file_exists($logoPath))
+                                        <img src="{{ $logoPath }}" style="max-height: 45px; max-width: 180px; margin-bottom: 5px;" alt="Logo"><br>
+                                    @endif
+                                    <span class="company-name">PT. SURYA DARMA PERKASA</span><br>
+                                    <span class="company-address">
+                                        JL. DAAN MOGOT KM.1 NO. 99, JAKARTA BARAT<br>
+                                        (021) 56977708, 5661060
+                                    </span>
+                                </td>
+                                <td style="width: 40%;">
+                                    <div class="invoice-title">INVOICE</div>
+                                    <div class="page-label" style="visibility: hidden;">Hal : 1</div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        {{-- Invoice Info (Repeated) --}}
+                        <table class="info-section">
+                            <tr>
+                                <td style="width: 55%; vertical-align: top;">
+                                    <table style="width: 100%; table-layout: fixed;">
+                                        <tr>
+                                            <td colspan="3" style="padding-bottom: 5px;">
+                                                <span style="font-size: 9px; color: #64748b;">Kepada Yth.</span><br>
+                                                <span class="customer-name">{{ $invoice->partner_name }}</span>
+                                                <div class="customer-address">{!! nl2br(e($invoice->partner_address ?? $invoice->partner_address_complete ?? '')) !!}</div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 45%; vertical-align: top;">
+                                    <table style="width: 100%;">
+                                        <tr>
+                                            <td class="info-label">Nomor</td>
+                                            <td class="info-colon">:</td>
+                                            <td>{{ $invoice->name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="info-label">Tanggal</td>
+                                            <td class="info-colon">:</td>
+                                            <td>{{ $invoice->invoice_date ? $invoice->invoice_date->format('d/m/Y') : '-' }}</td>
+                                        </tr>
+                                        <tr><td colspan="3" style="height: 5px;"></td></tr>
+                                        <tr>
+                                            <td class="info-label">Kode Pelanggan</td>
+                                            <td class="info-colon">:</td>
+                                            <td>{{ $invoice->ref ?? '' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="info-label">No. PO/Tanggal</td>
+                                            <td class="info-colon">:</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="info-label">Kontrak/Tanggal</td>
+                                            <td class="info-colon">:</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="info-label">Payment Terms</td>
+                                            <td class="info-colon">:</td>
+                                            <td>{{ $invoice->payment_term ?? '' }}</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr style="border-top: 2px solid #1e293b;">
                     <th class="col-no">NO.</th>
                     <th class="{{ $showUnitColumn ? 'col-desc' : 'col-desc-wide' }}">KETERANGAN</th>
                     @if($showUnitColumn)
@@ -380,93 +392,94 @@
             </tbody>
         </table>
 
-        {{-- Payment Terms & Totals --}}
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 55%; vertical-align: top;">
-                    <div style="font-size: 10px; margin-bottom: 5px;">
-                        <strong>Jatuh Tempo :</strong>
-                            @if($invoice->payment_term && $invoice->invoice_date)
-                                @php
-                                    // Calculate due date based on payment terms
-                                    $days = 0;
-                                    if (preg_match('/(\d+)\s*Days?/i', $invoice->payment_term, $m)) {
-                                        $days = (int)$m[1];
-                                    }
-                                    $dueDate = $invoice->invoice_date->copy()->addDays($days);
-                                @endphp
-                                {{ $dueDate->format('d/m/Y') }}
-                            @endif
-                    </div>
-                    <div class="ketentuan-section">
-                        <div class="ketentuan-title">KETENTUAN</div>
-                        <div class="ketentuan-content">
-                            1. Pembayaran dengan Cek/Giro/Transfer harap diatas namakan<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;pada bank : &nbsp;&nbsp;{{ $invoice->partner_bank ?? '' }}<br>
-                            2. Pembayaran dianggap lunas bila sudah diterima di rekening<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
-                            3. Bukti & perincian pembayaran harap di fax/di email ke : collection@hartonorentcar.com
+        <div style="page-break-inside: avoid;">
+            {{-- Payment Terms & Totals --}}
+            <table style="width: 100%; margin-top: 10px;">
+                <tr>
+                    <td style="width: 55%; vertical-align: top;">
+                        <div style="font-size: 10px; margin-bottom: 5px;">
+                            <strong>Jatuh Tempo :</strong>
+                                @if($invoice->payment_term && $invoice->invoice_date)
+                                    @php
+                                        // Calculate due date based on payment terms
+                                        $days = 0;
+                                        if (preg_match('/(\d+)\s*Days?/i', $invoice->payment_term, $m)) {
+                                            $days = (int)$m[1];
+                                        }
+                                        $dueDate = $invoice->invoice_date->copy()->addDays($days);
+                                    @endphp
+                                    {{ $dueDate->format('d/m/Y') }}
+                                @endif
                         </div>
-                    </div>
-                </td>
-                <td style="width: 45%; vertical-align: top;">
-                    <table class="totals-table" style="width: 100%;">
-                        <tr>
-                            <td style="text-align: right; font-weight: bold;">Jumlah</td>
-                            <td style="text-align: right; width: 140px;">{{ number_format($invoice->amount_untaxed, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr><td colspan="2" style="height: 8px;"></td></tr>
-                        @if($hasTax)
-                        {{-- WITH TAX: Show PPN row with border --}}
-                        <tr class="ppn-row">
-                            <td style="text-align: right;">PPN 11.00 %</td>
-                            <td style="text-align: right;">{{ number_format($invoice->amount_tax, 0, ',', '.') }}</td>
-                        </tr>
-                        @else
-                        {{-- WITHOUT TAX: No PPN row --}}
-                        @endif
-                        <tr><td colspan="2" style="height: 8px;"></td></tr>
-                        <tr class="total-row">
-                            <td style="text-align: right;">Total</td>
-                            <td style="text-align: right;">{{ number_format($invoice->amount_total, 0, ',', '.') }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+                        <div class="ketentuan-section">
+                            <div class="ketentuan-title">KETENTUAN</div>
+                            <div class="ketentuan-content">
+                                1. Pembayaran dengan Cek/Giro/Transfer harap diatas namakan<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;pada bank : &nbsp;&nbsp;{{ $invoice->partner_bank ?? '' }}<br>
+                                2. Pembayaran dianggap lunas bila sudah diterima di rekening<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
+                                3. Bukti & perincian pembayaran harap di fax/di email ke : collection@hartonorentcar.com
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 45%; vertical-align: top;">
+                        <table class="totals-table" style="width: 100%;">
+                            <tr>
+                                <td style="text-align: right; font-weight: bold;">Jumlah</td>
+                                <td style="text-align: right; width: 140px;">{{ number_format($invoice->amount_untaxed, 0, ',', '.') }}</td>
+                            </tr>
+                            <tr><td colspan="2" style="height: 8px;"></td></tr>
+                            @if($hasTax)
+                            {{-- WITH TAX: Show PPN row with border --}}
+                            <tr class="ppn-row">
+                                <td style="text-align: right;">PPN 11.00 %</td>
+                                <td style="text-align: right;">{{ number_format($invoice->amount_tax, 0, ',', '.') }}</td>
+                            </tr>
+                            @else
+                            {{-- WITHOUT TAX: No PPN row --}}
+                            @endif
+                            <tr><td colspan="2" style="height: 8px;"></td></tr>
+                            <tr class="total-row">
+                                <td style="text-align: right;">Total</td>
+                                <td style="text-align: right;">{{ number_format($invoice->amount_total, 0, ',', '.') }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
 
-        {{-- Terbilang --}}
-        <div class="terbilang-section">
-            <span class="terbilang-label">Terbilang :</span>
-            <em>{{ ucwords(\App\Helpers\Terbilang::convert($invoice->amount_total)) }} Rupiah #</em>
+            {{-- Terbilang --}}
+            <div class="terbilang-section">
+                <span class="terbilang-label">Terbilang :</span>
+                <em>{{ ucwords(\App\Helpers\Terbilang::convert($invoice->amount_total)) }} Rupiah #</em>
+            </div>
+
+            {{-- Catatan / Notes - Lines with 0 qty are notes --}}
+            @if($noteLines->isNotEmpty())
+            <div class="catatan-section">
+                <span class="catatan-label">CATATAN</span>
+                <div class="catatan-content">@foreach($noteLines as $note){{ $note->description }}
+    @endforeach</div>
+            </div>
+            @endif
+
+            {{-- Signature Block --}}
+            <table class="signature-table" style="margin-top: 20px;">
+                <tr>
+                    <td style="width: 50%;">
+                        <div class="signature-name" style="margin-top: 60px;">
+                            {{ strtoupper($managerName) }}
+                        </div>
+                    </td>
+                    <td style="width: 50%;">
+                        <div class="signature-name" style="margin-top: 60px;">
+                            {{ strtoupper($spvName) }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
-
-        {{-- Catatan / Notes - Lines with 0 qty are notes --}}
-        @if($noteLines->isNotEmpty())
-        <div class="catatan-section">
-            <span class="catatan-label">CATATAN</span>
-            <div class="catatan-content">@foreach($noteLines as $note){{ $note->description }}
-@endforeach</div>
-        </div>
-        @endif
-
-        {{-- Signature Block --}}
-        <table class="signature-table" style="margin-top: 20px;">
-            <tr>
-                <td style="width: 50%;">
-                    <div class="signature-name" style="margin-top: 60px;">
-                        {{ strtoupper($managerName) }}
-                    </div>
-                </td>
-                <td style="width: 50%;">
-                    <div class="signature-name" style="margin-top: 60px;">
-                        {{ strtoupper($spvName) }}
-                    </div>
-                </td>
-            </tr>
-        </table>
-
     </div>
     @endforeach
 

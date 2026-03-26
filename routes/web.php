@@ -9,6 +9,7 @@ use App\Http\Controllers\SettingController;
 
 use App\Http\Controllers\InvoiceDriverController;
 use App\Http\Controllers\InvoiceOtherController;
+use App\Http\Controllers\InvoiceRentalController;
 use App\Http\Controllers\Admin\PrintLogController;
 
 // ──────────────────────────────────────────────
@@ -35,15 +36,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/import/odoo/sync', [ImportController::class, 'syncOdoo'])->name('import.odoo.sync');
     Route::get('/import/history', [ImportController::class, 'history'])->name('import.history');
 
-    // Journal Entries
-    Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
-    Route::get('/journals/export-pdf', [JournalController::class, 'printAllPdf'])->name('journals.print-all');
-    Route::post('/journals/export-selected-pdf', [JournalController::class, 'printSelectedPdf'])->name('journals.print-selected');
-    Route::get('/journals/{entry}', [JournalController::class, 'show'])->name('journals.show');
-    Route::get('/journals/{entry}/pdf', [JournalController::class, 'printPdf'])->name('journals.print');
+    // Journal entries
+    Route::group(['prefix' => 'journals', 'as' => 'journals.'], function () {
+        Route::get('/', [JournalController::class, 'index'])->name('index');
+        Route::get('/export-pdf', [JournalController::class, 'printAllPdf'])->name('print-all');
+        Route::post('/export-selected-pdf', [JournalController::class, 'printSelectedPdf'])->name('print-selected');
+        Route::get('/{entry}', [JournalController::class, 'show'])->name('show');
+        Route::get('/{entry}/pdf', [JournalController::class, 'printPdf'])->name('print');
+    });
 
-    // Invoice Driver (requires invoice_driver or admin role)
-    Route::prefix('invoice-driver')->name('invoice-driver.')->middleware('role:invoice_driver')->group(function () {
+    // Invoice Driver
+    Route::group(['prefix' => 'invoice-driver', 'as' => 'invoice-driver.', 'middleware' => 'role:invoice_driver'], function () {
         Route::get('/', [InvoiceDriverController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceDriverController::class, 'sync'])->name('sync');
         Route::post('/print-selected', [InvoiceDriverController::class, 'printSelectedPdf'])->name('print-selected');
@@ -51,13 +54,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/pdf', [InvoiceDriverController::class, 'printPdf'])->name('print');
     });
 
-    // Invoice Other (requires invoice_driver or admin role)
-    Route::prefix('invoice-other')->name('invoice-other.')->middleware('role:invoice_driver')->group(function () {
+    // Invoice Other
+    Route::group(['prefix' => 'invoice-other', 'as' => 'invoice-other.', 'middleware' => 'role:invoice_driver'], function () {
         Route::get('/', [InvoiceOtherController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceOtherController::class, 'sync'])->name('sync');
         Route::post('/print-selected', [InvoiceOtherController::class, 'printSelectedPdf'])->name('print-selected');
         Route::get('/{invoice}', [InvoiceOtherController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceOtherController::class, 'printPdf'])->name('print');
+    });
+
+    // Invoice Rental
+    Route::group(['prefix' => 'invoice-rental', 'as' => 'invoice-rental.', 'middleware' => 'role:invoice_driver'], function () {
+        Route::get('/', [InvoiceRentalController::class, 'index'])->name('index');
+        Route::post('/sync', [InvoiceRentalController::class, 'sync'])->name('sync');
+        Route::post('/print-selected', [InvoiceRentalController::class, 'printSelectedPdf'])->name('print-selected');
+        Route::get('/{invoice}', [InvoiceRentalController::class, 'show'])->name('show');
+        Route::get('/{invoice}/pdf', [InvoiceRentalController::class, 'printPdf'])->name('print');
     });
 
     // Settings
