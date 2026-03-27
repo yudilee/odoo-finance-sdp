@@ -457,6 +457,131 @@ class OdooService
     }
 
     /**
+     * Fetch Invoice Vehicle (Penjualan Kendaraan) entries from Odoo using export_data
+     * Journal: Invoice Penjualan Kendaraan (INVCR)
+     */
+    public function fetchInvoiceVehicles(string $dateFrom, string $dateTo): array
+    {
+        try {
+            $domain = [
+                ['state', '=', 'posted'],
+                ['journal_id.name', '=', 'Invoice Used Car'],
+                ['invoice_date', '>=', $dateFrom],
+                ['invoice_date', '<=', $dateTo],
+            ];
+
+            $moveIds = $this->execute('account.move', 'search', [$domain]);
+
+            if (empty($moveIds)) {
+                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice vehicle entries found.'];
+            }
+
+            $exportFields = [
+                'name',                                  // 0: Invoice number (INVCR/...)
+                'partner_id/name',                       // 1: Customer name
+                'invoice_date',                          // 2: Invoice date
+                'invoice_payment_term_id/name',          // 3: Payment terms
+                'ref',                                   // 4: Customer Reference
+                'journal_id/name',                       // 5: Journal name
+                'amount_untaxed',                        // 6: Subtotal
+                'amount_tax',                            // 7: Tax
+                'amount_total',                          // 8: Total
+                'invoice_line_ids/name',                 // 9: Line description
+                'invoice_line_ids/quantity',              // 10: Line qty
+                'invoice_line_ids/price_unit',           // 11: Line unit price
+                'partner_bank_id/acc_number',            // 12: Bank account number
+                'bc_manager_id/name',                    // 13: Manager name
+                'bc_spv_id/name',                        // 14: Supervisor name
+                'partner_id/contact_address',            // 15: Address (multiline)
+                'partner_id/contact_address_complete',   // 16: Address (single line)
+                'invoice_line_ids/product_id/name',      // 17: Product name (vehicle model)
+                'invoice_line_ids/serial_ids/name',         // 18: Serial = No Polisi
+                'partner_id/vat',                        // 19: NPWP
+            ];
+
+            $entries = [];
+            $chunkSize = 500;
+            $moveIdsChunks = array_chunk($moveIds, $chunkSize);
+
+            foreach ($moveIdsChunks as $chunk) {
+                $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
+
+                if (!isset($result['datas'])) {
+                    continue;
+                }
+
+                $currentEntry = null;
+
+                foreach ($result['datas'] as $row) {
+                    $invoiceName = $row[0] ?? '';
+
+                    if (!empty($invoiceName)) {
+                        if ($currentEntry !== null) {
+                            $entries[] = $currentEntry;
+                        }
+                        $currentEntry = [
+                            'name' => $invoiceName,
+                            'partner_name' => $row[1] ?? '',
+                            'invoice_date' => $row[2] ?? '',
+                            'payment_term' => $row[3] ?? '',
+                            'ref' => $row[4] ?? '',
+                            'journal_name' => $row[5] ?? 'Invoice Penjualan Kendaraan',
+                            'amount_untaxed' => (float)($row[6] ?? 0),
+                            'amount_tax' => (float)($row[7] ?? 0),
+                            'amount_total' => (float)($row[8] ?? 0),
+                            'partner_bank' => $row[12] ?? '',
+                            'manager_name' => $row[13] ?? '',
+                            'spv_name' => $row[14] ?? '',
+                            'partner_address' => $row[15] ?? '',
+                            'partner_address_complete' => $row[16] ?? '',
+                            'partner_npwp' => $row[19] ?? '',
+                            'lines' => [],
+                        ];
+                    }
+
+                    if ($currentEntry !== null) {
+                        $lineDesc = $row[9] ?? '';
+                        $lineQty = (float)($row[10] ?? 0);
+                        $linePrice = (float)($row[11] ?? 0);
+                        $productName = $row[17] ?? '';
+                        $licensePlate = $row[18] ?? '';
+
+                        // Extract serial/VIN from description if available
+                        // Description typically contains: "Penjualan Kend.MHKM5FA4JLK062083"
+                        $serialNumber = '';
+                        if (preg_match('/Kend\.?\s*([A-Z0-9]+)/i', $lineDesc, $matches)) {
+                            $serialNumber = $matches[1];
+                        }
+
+                        if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
+                            $currentEntry['lines'][] = [
+                                'description' => $lineDesc,
+                                'quantity' => $lineQty,
+                                'price_unit' => $linePrice,
+                                'product_name' => $productName,
+                                'license_plate' => $licensePlate,
+                                'serial_number' => $serialNumber,
+                            ];
+                        }
+                    }
+                }
+
+                if ($currentEntry !== null) {
+                    $entries[] = $currentEntry;
+                }
+            }
+
+            return [
+                'success' => true,
+                'data' => $entries,
+                'count' => count($entries),
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+        }
+    }
+
+    /**
      * Fetch Invoice Rental entries from Odoo using export_data
      * Fetches both "Invoice Sewa Retail" and "Invoice Sewa Subscription" journals
      */

@@ -10,6 +10,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceDriverController;
 use App\Http\Controllers\InvoiceOtherController;
 use App\Http\Controllers\InvoiceRentalController;
+use App\Http\Controllers\InvoiceVehicleController;
 use App\Http\Controllers\Admin\PrintLogController;
 
 // ──────────────────────────────────────────────
@@ -73,6 +74,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/print-selected', [InvoiceRentalController::class, 'printSelectedPdf'])->name('print-selected');
         Route::get('/{invoice}', [InvoiceRentalController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceRentalController::class, 'printPdf'])->name('print');
+    });
+
+    // Invoice Vehicle (Penjualan Kendaraan)
+    Route::group(['prefix' => 'invoice-vehicle', 'as' => 'invoice-vehicle.', 'middleware' => 'role:invoice_driver'], function () {
+        Route::get('/', [InvoiceVehicleController::class, 'index'])->name('index');
+        Route::post('/sync', [InvoiceVehicleController::class, 'sync'])->name('sync');
+        Route::post('/print-selected', [InvoiceVehicleController::class, 'printSelectedPdf'])->name('print-selected');
+        Route::get('/{invoice}', [InvoiceVehicleController::class, 'show'])->name('show');
+        Route::get('/{invoice}/pdf', [InvoiceVehicleController::class, 'printPdf'])->name('print');
     });
 
     // Settings

@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         \Carbon\Carbon::setLocale('id');
 
-        if ($this->app->environment('production')) {
+        if (str_starts_with(config('app.url', ''), 'https')) {
             URL::forceScheme('https');
         }
     }
