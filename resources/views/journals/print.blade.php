@@ -121,13 +121,12 @@
             /* Determine page setup based on var */
             @if(($paperSize ?? 'A5') === 'A4')
                 @page { size: A4 portrait; margin: 10mm; }
-                .voucher-page:not(:last-child) {
-                    page-break-after: always;
+                .voucher-page {
                     height: 277mm; /* A4 height approx minus margins */
                     box-sizing: border-box;
                 }
-                .voucher-page:last-child {
-                    page-break-after: auto;
+                .voucher-page:not(:last-child) {
+                    page-break-after: always;
                 }
                 .voucher-wrapper {
                     height: 48%; /* Slightly less than 50 to avoid spilling */
@@ -154,8 +153,10 @@
         /* Screen preview styling matches print media queries above */
         @media screen {
             @if(($paperSize ?? 'A5') === 'A4')
-                .voucher-page:not(:last-child) {
+                .voucher-page {
                     margin-bottom: 20px;
+                }
+                .voucher-page:not(:last-child) {
                     page-break-after: always;
                 }
                 .voucher-wrapper {
@@ -169,9 +170,11 @@
                     margin-bottom: 2%;
                 }
             @else
+                .voucher-page {
+                    margin-bottom: 20px;
+                }
                 .voucher-page:not(:last-child) {
                     page-break-after: always;
-                    margin-bottom: 20px;
                 }
             @endif
         }
