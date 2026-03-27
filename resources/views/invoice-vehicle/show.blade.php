@@ -30,9 +30,9 @@
         <div class="p-6 border-b border-slate-200 dark:border-slate-700">
             <div class="flex items-start justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold {{ $invoice->hasTax() ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400' }} font-mono">{{ $invoice->name }}</h2>
+                    <h2 class="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">{{ $invoice->name }}</h2>
                     <p class="text-sm text-slate-500 mt-1">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $invoice->hasTax() ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' }}">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                             {{ $invoice->journal_name }}
                         </span>
                     </p>
