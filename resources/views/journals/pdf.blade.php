@@ -25,7 +25,7 @@
             vertical-align: top;
             padding: 6px;
         }
-        .voucher-page {
+        .voucher-page:not(:last-child) {
             page-break-after: always;
             position: relative;
         }
