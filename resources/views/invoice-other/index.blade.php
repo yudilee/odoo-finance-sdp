@@ -152,7 +152,7 @@
         </div>
 
         <div x-show="filtersOpen" x-cloak x-transition class="p-4 border-t border-slate-200 dark:border-slate-700">
-            <form method="GET" action="{{ route('invoice-other.index') }}">
+            <form method="GET" action="{{ route('invoice-other.index', [], false) }}">
             <div class="flex flex-wrap items-end gap-3 mb-3">
                 <div class="flex-1 min-w-[180px]">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
@@ -215,7 +215,7 @@
     </div>
 
     {{-- Table --}}
-    <form id="bulkPrintForm" method="POST" action="{{ route('invoice-other.print-selected') }}" target="_blank">
+    <form id="bulkPrintForm" method="POST" action="{{ route('invoice-other.print-selected', [], false) }}" target="_blank">
         @csrf
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto max-h-[75vh]">

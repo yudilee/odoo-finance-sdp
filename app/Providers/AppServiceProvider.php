@@ -22,8 +22,9 @@ class AppServiceProvider extends ServiceProvider
     {
         \Carbon\Carbon::setLocale('id');
 
-        if (str_starts_with(config('app.url', ''), 'https')) {
-            URL::forceScheme('https');
+        // Force HTTPS in production to avoid "not secure" submission warnings
+        if (app()->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }
 }

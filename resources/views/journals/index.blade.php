@@ -119,7 +119,7 @@
         </div>
 
         <div x-show="filtersOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="p-4 border-t border-slate-200 dark:border-slate-700">
-            <form method="GET" action="{{ route('journals.index') }}">
+            <form method="GET" action="{{ route('journals.index', [], false) }}">
             <input type="hidden" name="filter_applied" value="1">
 
             {{-- Row 1: Search + Dates + Account --}}
@@ -192,11 +192,11 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         <span class="hidden md:inline">PDF All</span>
                     </a>
-                    <button type="submit" form="bulkPrintForm" formaction="{{ route('journals.print-selected-html') }}" class="printSelectedBtn px-3 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled title="Direct Print Selected">
+                    <button type="submit" form="bulkPrintForm" formaction="{{ route('journals.print-selected-html', [], false) }}" class="printSelectedBtn px-3 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled title="Direct Print Selected">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         <span class="hidden md:inline">Print (<span class="selectedCount">0</span>)</span>
                     </button>
-                    <button type="submit" form="bulkPrintForm" formaction="{{ route('journals.print-selected') }}" class="printSelectedBtn px-3 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled title="Export Selected PDF">
+                    <button type="submit" form="bulkPrintForm" formaction="{{ route('journals.print-selected', [], false) }}" class="printSelectedBtn px-3 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled title="Export Selected PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         <span class="hidden md:inline">PDF (<span class="selectedCountSm">0</span>)</span>
                     </button>
@@ -206,7 +206,7 @@
     </div>
 
     {{-- Table --}}
-    <form id="bulkPrintForm" method="POST" action="{{ route('journals.print-selected') }}" target="_blank">
+    <form id="bulkPrintForm" method="POST" action="{{ route('journals.print-selected', [], false) }}" target="_blank">
         @csrf
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto max-h-[75vh]">
