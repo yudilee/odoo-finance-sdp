@@ -4,12 +4,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Journal Entries</title>
     <style>
-        
         @page {
             margin: 40px 50px;
         }
         body {
-            /* Fallback to Helvetica for headers, but table will use Space Mono */
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
             font-size: 11px;
             color: #1e293b;
@@ -34,10 +32,6 @@
         .voucher-page:last-child {
             page-break-after: auto;
         }
-        .header-table {
-            margin-bottom: 25px;
-            margin-top: 10px;
-        }
         .header-move-name {
             font-size: 26px;
             font-weight: bold;
@@ -48,28 +42,16 @@
             max-height: 40px;
             max-width: 160px;
         }
-        .info-table {
-            margin-bottom: 25px;
-            width: 100%;
-            table-layout: fixed;
-        }
-        .info-table > tbody > tr > td {
-            font-size: 11px;
-            color: #334155;
-            vertical-align: top;
-            padding: 0;
-        }
-        .info-table table td {
-            padding: 4px 0;
-        }
         .info-label {
             font-weight: bold;
             color: #1c3254;
-            width: 100px;
+        }
+        /* Static header (used in A4 mode) */
+        .voucher-static-header {
+            margin-bottom: 5px;
         }
         .lines-table {
-            border-top: 2px solid #e2e8f0;
-            margin-top: 10px;
+            margin-top: 0;
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
         }
         .lines-table tr {
@@ -77,28 +59,26 @@
         }
         .lines-table th {
             text-align: left;
-            border-bottom: 1px solid #cbd5e1;
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #475569;
             font-weight: bold;
-            padding: 10px 5px;
+            padding: 8px 5px;
             color: #000000;
             font-size: 11px;
-            /* Keep header sans-serif for clean look if desired, or let it inherit */
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
         }
-        .lines-table td {
+        /* Only target the direct tbody rows, not header cell content */
+        .lines-table > tbody > tr > td {
             padding: 10px 5px;
             font-size: 10px;
             word-wrap: break-word;
         }
-        
-        /* Adjusted Column Widths */
         .col-account { width: 20%; padding-right: 10px; }
         .col-partner { width: 17%; padding-right: 10px; }
-        .col-label { width: 23%; padding-right: 10px; }
-        /* Give plenty of room for Rp and huge numbers on one line */
-        .col-debit { width: 20%; text-align: right; white-space: nowrap; }
-        .col-credit { width: 20%; text-align: right; white-space: nowrap; }
-        
+        .col-label   { width: 23%; padding-right: 10px; }
+        .col-debit   { width: 20%; text-align: right; white-space: nowrap; }
+        .col-credit  { width: 20%; text-align: right; white-space: nowrap; }
+
         .totals-row td {
             border-top: 1px solid #cbd5e1;
             border-bottom: 1px solid #cbd5e1;
@@ -107,60 +87,40 @@
             padding-top: 12px;
             padding-bottom: 12px;
             font-size: 11px;
-            white-space: nowrap; /* Prevent numbers wrapping here */
+            white-space: nowrap;
         }
-        .lines-table tbody tr:nth-child(even) {
+        .lines-table > tbody > tr:nth-child(even) {
             background-color: #f8fafc;
         }
         .text-right { text-align: right; }
 
-        /* Ensure repeated header doesn't have borders/styles from th */
-        .lines-table thead tr:first-child td {
+        /* The repeating header cell (thead first row td) */
+        .voucher-header-cell {
             border: none !important;
-            border-bottom: 1px solid #cbd5e1 !important; /* Divider Line */
+            border-bottom: 1px solid #cbd5e1 !important;
             background-color: white !important;
-            padding: 0 0 15px 0 !important;
-            margin-bottom: 10px !important;
-        }
-
-        /* Strip all borders from nested metadata tables (more aggressive) */
-        .metadata-table,
-        .metadata-table thead,
-        .metadata-table tbody,
-        .metadata-table tr,
-        .metadata-table th,
-        .metadata-table td {
-            border: none !important;
-            border-top: none !important;
-            border-bottom: none !important;
-            border-left: none !important;
-            border-right: none !important;
-            box-shadow: none !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-        }
-        .metadata-table > tbody > tr > td,
-        .metadata-table > tr > td {
-            padding: 3px 4px !important;
+            padding: 8px 0 15px 0 !important;
         }
     </style>
 </head>
 <body>
 
     @if(($paperSize ?? 'A5') === 'A4')
+        {{-- A4 Mode: 2 vouchers per page, no thead repetition to avoid ghost headers --}}
         @foreach($entries->chunk(2) as $chunk)
         <div class="voucher-page">
             @foreach($chunk as $entry)
                 <div style="height: 48%; overflow: hidden; {{ $loop->first && count($chunk) > 1 ? 'border-bottom: 1px dashed #cbd5e1; margin-bottom: 2%;' : '' }}">
-                    @include('journals.partials.voucher', ['entry' => $entry])
+                    @include('journals.partials.voucher', ['entry' => $entry, 'isPdf' => true, 'useRepeatHeader' => false])
                 </div>
             @endforeach
         </div>
         @endforeach
     @else
+        {{-- A5 Mode: 1 voucher per page, thead repetition enabled for sticky headers --}}
         @foreach($entries as $entry)
         <div class="voucher-page">
-            @include('journals.partials.voucher', ['entry' => $entry])
+            @include('journals.partials.voucher', ['entry' => $entry, 'isPdf' => true, 'useRepeatHeader' => true])
         </div>
         @endforeach
     @endif
