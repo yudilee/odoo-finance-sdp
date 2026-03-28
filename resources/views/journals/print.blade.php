@@ -104,9 +104,8 @@
         /* Page-break header inserted by JS */
         .page-break-header {
             page-break-before: always;
-            padding-bottom: 10px;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 0;
+            margin-bottom: 0;
         }
         .page-break-header .header-move-name {
             font-size: 26px;
