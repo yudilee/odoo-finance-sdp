@@ -57,8 +57,7 @@
         }
         .lines-table th {
             text-align: left;
-            border-top: 1px solid #1e293b;
-            border-bottom: 1px solid #475569;
+            border-bottom: 1px solid #1e293b;
             font-weight: bold;
             padding: 8px 5px;
             color: #000000;
