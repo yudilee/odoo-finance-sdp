@@ -21,6 +21,7 @@
         .invoice-page {
             page-break-after: always;
             position: relative;
+            counter-reset: page;
         }
         .invoice-page:last-child {
             page-break-after: auto;
