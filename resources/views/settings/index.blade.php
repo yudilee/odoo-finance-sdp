@@ -285,6 +285,7 @@
                     url: @json($printHubConfig['url']),
                     api_key: @json($printHubConfig['api_key']),
                     timeout: @json($printHubConfig['timeout']),
+                    default_profile: @json($printHubConfig['default_profile'] ?? ''),
                 },
                 saving: false,
                 testing: false,
@@ -307,7 +308,8 @@
                             body: JSON.stringify({ 
                                 print_hub_url: this.config.url, 
                                 print_hub_api_key: this.config.api_key,
-                                print_hub_timeout: this.config.timeout
+                                print_hub_timeout: this.config.timeout,
+                                print_hub_default_profile: this.config.default_profile
                             })
                         });
                         const data = await resp.json();
@@ -388,6 +390,12 @@
                             <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">API Key / Token</label>
                             <input type="password" x-model="config.api_key" placeholder="Enter Hub API Key"
                                 class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Default Print Profile</label>
+                            <input type="text" x-model="config.default_profile" placeholder="e.g. journal_half_letter"
+                                class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition">
+                            <p class="mt-1 text-[10px] text-slate-400">Profiles define paper size, orientation and margins on the Hub.</p>
                         </div>
                     </div>
                     

@@ -27,6 +27,7 @@ class SettingController extends Controller
             'url' => Setting::get('print_hub_url', ''),
             'api_key' => Setting::get('print_hub_api_key', ''),
             'timeout' => Setting::get('print_hub_timeout', '15'),
+            'default_profile' => Setting::get('print_hub_default_profile', ''),
         ];
         $schedule = [
             'enabled' => Setting::getValue('odoo_schedule_enabled', 'false') === 'true',
@@ -129,11 +130,13 @@ class SettingController extends Controller
             'print_hub_url' => 'required|url',
             'print_hub_api_key' => 'required|string',
             'print_hub_timeout' => 'required|integer|min:1',
+            'print_hub_default_profile' => 'nullable|string',
         ]);
 
         Setting::set('print_hub_url', $request->input('print_hub_url'));
         Setting::set('print_hub_api_key', $request->input('print_hub_api_key'));
         Setting::set('print_hub_timeout', $request->input('print_hub_timeout'));
+        Setting::set('print_hub_default_profile', $request->input('print_hub_default_profile', ''));
 
         return response()->json(['success' => true, 'message' => 'Print Hub configuration saved successfully.']);
     }

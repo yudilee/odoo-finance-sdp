@@ -64,15 +64,19 @@ class PrintHubService
     /**
      * Send a PDF to the hub for printing
      */
-    public function printPdf(string $printerName, string $pdfBase64, array $options = []): array
+    public function printPdf(string $printerName, string $pdfBase64, array $options = [], ?string $profile = null): array
     {
         if (empty($this->url)) {
             return ['success' => false, 'message' => 'Print Hub URL not configured.'];
         }
 
         try {
+            // Use provided profile or fall back to default setting
+            $targetProfile = $profile ?: Setting::get('print_hub_default_profile');
+
             $payload = [
                 'printer' => $printerName,
+                'profile' => $targetProfile,
                 'document_base64' => $pdfBase64,
                 'type' => 'pdf',
                 'options' => $options
