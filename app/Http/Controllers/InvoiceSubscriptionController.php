@@ -206,8 +206,16 @@ class InvoiceSubscriptionController extends Controller
     public function sync(Request $request)
     {
         try {
-            $dateFrom = self::DATE_FROM;
-            $dateTo   = Carbon::today()->addDays(15)->format('Y-m-d');
+            $dateFrom = $request->input('from', self::DATE_FROM);
+            $dateTo   = $request->input('to', Carbon::today()->addDays(15)->format('Y-m-d'));
+
+            // Basic validation
+            try {
+                Carbon::parse($dateFrom);
+                Carbon::parse($dateTo);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Invalid date format provided.']);
+            }
 
             $odoo   = new OdooService();
             $result = $odoo->fetchSubscriptionInvoicePeriods($dateFrom, $dateTo);
@@ -219,6 +227,7 @@ class InvoiceSubscriptionController extends Controller
                     'items_count'   => 0,
                     'status'        => 'failed',
                     'error_message' => $result['message'] ?? 'Unknown error',
+                    'summary_json'  => ['date_from' => $dateFrom, 'date_to' => $dateTo],
                 ]);
 
                 return response()->json([
@@ -230,7 +239,7 @@ class InvoiceSubscriptionController extends Controller
             if (empty($result['data'])) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No subscription invoice periods found.',
+                    'message' => "No periods found for {$dateFrom} to {$dateTo}.",
                     'count'   => 0,
                 ]);
             }
@@ -251,7 +260,7 @@ class InvoiceSubscriptionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Synced {$savedCount} subscription invoice periods from Odoo.",
+                'message' => "Synced {$savedCount} periods for range [{$dateFrom} to {$dateTo}].",
                 'count'   => $savedCount,
             ]);
         } catch (\Exception $e) {
@@ -270,6 +279,180 @@ class InvoiceSubscriptionController extends Controller
                 'message' => 'Sync failed: ' . $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Export subscription data to CSV or Excel.
+     */
+    public function export(Request $request)
+    {
+        $ids = $request->input('selected_ids', []);
+        $format = $request->input('format', 'csv');
+        $visibleColumnsInput = $request->input('columns', '[]');
+        $visibleColumns = is_string($visibleColumnsInput) 
+            ? json_decode($visibleColumnsInput, true) 
+            : $visibleColumnsInput;
+
+        $query = InvoiceSubscription::query();
+        
+        if (!empty($ids)) {
+            $query->whereIn('id', $ids);
+        } else {
+            // Replicate filtering logic from index()
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('so_name', 'like', "%{$search}%")
+                      ->orWhere('partner_name', 'like', "%{$search}%")
+                      ->orWhere('invoice_name', 'like', "%{$search}%")
+                      ->orWhere('product_name', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('status') && $request->status !== 'all') {
+                $status = $request->status;
+                match ($status) {
+                    'not_invoiced' => $query->where(function ($q) {
+                                            $q->whereNull('invoice_name')->orWhere('invoice_name', '');
+                                        }),
+                    'draft'        => $query->whereRaw("LOWER(invoice_state) = 'draft'"),
+                    'paid'         => $query->whereRaw("LOWER(payment_state) = 'paid'"),
+                    'unpaid'       => $query->whereRaw("LOWER(invoice_state) = 'posted'")
+                                           ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'"),
+                    default        => null,
+                };
+            }
+
+            if ($request->filled('date_from')) $query->where('invoice_date', '>=', $request->date_from);
+            if ($request->filled('date_to'))   $query->where('invoice_date', '<=', $request->date_to);
+            if ($request->filled('rental_status') && $request->rental_status !== 'all') {
+                $query->where('rental_status', $request->rental_status);
+            }
+        }
+
+        // Apply sorting
+        $sort = $request->input('sort', 'invoice_date');
+        $dir = $request->input('dir', 'desc');
+        $allowedSorts = ['invoice_date', 'so_name', 'partner_name', 'rental_status', 'invoice_name', 'period_start', 'product_name'];
+        if (!in_array($sort, $allowedSorts)) $sort = 'invoice_date';
+        if (!in_array($dir, ['asc', 'desc']))  $dir  = 'desc';
+
+        $query->orderBy($sort, $dir);
+        if ($sort !== 'invoice_date') {
+            $query->orderBy('invoice_date', 'asc');
+        }
+
+        $records = $query->get();
+
+        if ($format === 'excel') {
+            return $this->exportExcel($records, $visibleColumns);
+        }
+
+        return $this->exportCsv($records, $visibleColumns);
+    }
+
+    /**
+     * Export to Excel (as HTML table).
+     */
+    private function exportExcel($records, $columns)
+    {
+        $filename = 'export_subscription_' . now()->format('YmdHis') . '.xls';
+        
+        $html = '<table border="1">';
+        $html .= '<thead><tr>';
+        foreach ($columns as $col) {
+            $html .= '<th style="background-color: #f2f2f2;">' . e($col['label']) . '</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+        
+        foreach ($records as $row) {
+            $html .= '<tr>';
+            foreach ($columns as $col) {
+                $val = $this->getColumnValue($row, $col['id']);
+                $html .= '<td>' . e($val) . '</td>';
+            }
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table>';
+        
+        return response($html, 200, [
+            "Content-type"        => "application/vnd.ms-excel",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ]);
+    }
+
+    /**
+     * Export to CSV.
+     */
+    private function exportCsv($records, $columns)
+    {
+        $filename = 'export_subscription_' . now()->format('YmdHis') . '.csv';
+        
+        $callback = function() use ($records, $columns) {
+            $file = fopen('php://output', 'w');
+            
+            // Header
+            fputcsv($file, array_column($columns, 'label'));
+            
+            // Data
+            foreach ($records as $row) {
+                $data = [];
+                foreach ($columns as $col) {
+                    $data[] = $this->getColumnValue($row, $col['id']);
+                }
+                fputcsv($file, $data);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ]);
+    }
+
+    /**
+     * Get display value for a column.
+     */
+    private function getColumnValue($row, $colId)
+    {
+        return match($colId) {
+            'status'       => $this->getStatusLabel($row),
+            'period_start' => $row->period_start ? Carbon::parse($row->period_start)->format('d M Y') . ' - ' . ($row->period_end ? Carbon::parse($row->period_end)->format('d M Y') : '') : '',
+            'invoice_date' => $row->invoice_date ? Carbon::parse($row->invoice_date)->format('d M Y') : '',
+            'synced_at'    => $row->synced_at ? Carbon::parse($row->synced_at)->format('d M Y H:i') : '',
+            'price_unit'   => number_format($row->price_unit, 2),
+            'actual_start_rental' => $row->actual_start_rental ? Carbon::parse($row->actual_start_rental)->format('d M Y') : '',
+            'actual_end_rental'   => $row->actual_end_rental ? Carbon::parse($row->actual_end_rental)->format('d M Y') : '',
+            default        => $row->{$colId} ?? ''
+        };
+    }
+
+    /**
+     * Determine the same status label used in the UI.
+     */
+    private function getStatusLabel($row) 
+    {
+        if (!$row->invoice_name) {
+            $isOverdue = $row->invoice_date < now()->toDateString();
+            return $isOverdue ? 'Not Invoiced (Overdue)' : 'Not Invoiced';
+        }
+        
+        $state = strtolower($row->invoice_state ?? '');
+        $pay   = strtolower($row->payment_state ?? '');
+
+        if ($state === 'draft') return 'Draft';
+        if ($pay === 'paid')    return 'Paid';
+        if ($state === 'posted') return 'Posted/Unpaid';
+        
+        return $row->invoice_state ?? 'Unknown';
     }
 
     /**

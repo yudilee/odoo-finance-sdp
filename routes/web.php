@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/sync', [InvoiceSubscriptionController::class, 'sync'])->name('sync');
         Route::post('/preferences', [InvoiceSubscriptionController::class, 'updatePreferences'])->name('preferences.update');
         Route::post('/preferences/reset', [InvoiceSubscriptionController::class, 'resetPreferences'])->name('preferences.reset');
+        Route::post('/export', [InvoiceSubscriptionController::class, 'export'])->name('export');
     });
 
 

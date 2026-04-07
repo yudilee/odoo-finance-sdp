@@ -35,34 +35,157 @@
 <div x-data="{
     syncOpen: false,
     syncing: false,
-    syncMessage: '',
-    syncSuccess: null,
+    syncProgress: 0,
+    syncCurrentStep: '',
+    syncResults: [],
+    selectedIds: [],
+    exportOpen: false,
     columns: {{ json_encode($tablePrefs['columns']) }},
-    async doSync() {
-        this.syncing = true;
-        this.syncMessage = '';
-        this.syncSuccess = null;
-        try {
-            const res = await fetch('{{ route('invoice-subscription.sync', [], false) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                    'Accept': 'application/json',
-                }
+    generateChunks() {
+        // Start from 2025-04-01
+        const start = new Date(2025, 3, 1); 
+        const end = new Date();
+        end.setDate(end.getDate() + 15);
+        
+        const chunks = [];
+        let current = new Date(start.getFullYear(), start.getMonth(), 1);
+        
+        while (current <= end) {
+            const chunkStart = new Date(current);
+            const chunkEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+            
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            chunks.push({
+                from: formatDate(chunkStart),
+                to: formatDate(chunkEnd),
+                label: chunkStart.toLocaleString('default', { month: 'long', year: 'numeric' })
             });
-            const data = await res.json();
-            this.syncSuccess = data.success;
-            this.syncMessage = data.message || (data.success ? 'Sync completed!' : 'Sync failed.');
-            if (data.success) {
-                setTimeout(() => window.location.reload(), 1500);
-            }
-        } catch (e) {
-            this.syncSuccess = false;
-            this.syncMessage = 'Network error: ' + e.message;
-        } finally {
-            this.syncing = false;
+            
+            current.setMonth(current.getMonth() + 1);
         }
+        return chunks;
+    },
+    async doSync() {
+        const chunks = this.generateChunks();
+        this.syncing = true;
+        this.syncProgress = 0;
+        this.syncResults = [];
+        
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            this.syncCurrentStep = `Processing ${chunk.label}...`;
+            
+            try {
+                const url = `{{ route('invoice-subscription.sync', [], false) }}?from=${chunk.from}&to=${chunk.to}`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await res.json();
+                this.syncResults.push({ 
+                    label: chunk.label, 
+                    success: data.success, 
+                    count: data.count || 0,
+                    message: data.message
+                });
+            } catch (e) {
+                this.syncResults.push({ 
+                    label: chunk.label, 
+                    success: false, 
+                    error: e.message 
+                });
+            }
+            
+            this.syncProgress = Math.round(((i + 1) / chunks.length) * 100);
+        }
+        
+        this.syncCurrentStep = 'Sync Finished!';
+        setTimeout(() => window.location.reload(), 2000);
+    },
+    toggleAll(checked) {
+        if (checked) {
+            const pageIds = [{{ implode(',', $records->pluck('id')->toArray()) }}];
+            this.selectedIds = [...new Set([...this.selectedIds, ...pageIds])];
+        } else {
+            const pageIds = [{{ implode(',', $records->pluck('id')->toArray()) }}];
+            this.selectedIds = this.selectedIds.filter(id => !pageIds.includes(id));
+        }
+    },
+    isAllSelected() {
+        const pageIds = [{{ implode(',', $records->pluck('id')->toArray()) }}];
+        return pageIds.length > 0 && pageIds.every(id => this.selectedIds.includes(id));
+    },
+    doExport(format, mode = 'selected') {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('invoice-subscription.export') }}';
+        
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = document.querySelector('meta[name=csrf-token]').content;
+        form.appendChild(csrf);
+
+        const formatInput = document.createElement('input');
+        formatInput.type = 'hidden';
+        formatInput.name = 'format';
+        formatInput.value = format;
+        form.appendChild(formatInput);
+
+        // Send visible columns
+        const visibleCols = this.columns
+            .filter(c => c.visible && c.id !== 'status')
+            .map(c => ({ id: c.id, label: c.label }));
+        
+        // Add status if visible
+        if (this.columns.some(c => c.visible && c.id === 'status')) {
+            visibleCols.push({ id: 'status', label: 'Status' });
+        }
+
+        const colsInput = document.createElement('input');
+        colsInput.type = 'hidden';
+        colsInput.name = 'columns';
+        colsInput.value = JSON.stringify(visibleCols);
+        form.appendChild(colsInput);
+
+        if (mode === 'selected') {
+            if (this.selectedIds.length === 0) {
+                alert('Please select at least one record.');
+                return;
+            }
+            this.selectedIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+        } else {
+            // All (Filtered) - include current query params
+            const params = new URLSearchParams(window.location.search);
+            for (const [key, value] of params) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        this.exportOpen = false;
     },
     async savePrefs() {
         try {
@@ -215,6 +338,38 @@
                         Sync Odoo
                     </button>
                     
+                    {{-- Export Data Menu --}}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M16 9l-4-4-4 4M12 5v13"/></svg>
+                            Export
+                            <svg class="w-3 h-3 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-[60] py-1 overflow-hidden">
+                            <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50/50 dark:bg-white/5 border-b border-slate-100 dark:border-slate-700/50 mb-1">Export Selected (<span x-text="selectedIds.length"></span>)</div>
+                            <button type="button" @click="doExport('excel', 'selected'); open = false" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,20H14L12,16.6L10,20H8.2L11,15.5L8.2,11H10L12,14.4L14,11H15.8L13,15.5L15.8,20M13,9V3.5L18.5,9H13Z"/></svg>
+                                Excel (.xls)
+                            </button>
+                            <button type="button" @click="doExport('csv', 'selected'); open = false" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                CSV File
+                            </button>
+                            
+                            <div class="border-t border-slate-100 dark:border-slate-700/50 my-1"></div>
+                            
+                            <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50/50 dark:bg-white/5 border-b border-slate-100 dark:border-slate-700/50 mb-1">Export All (Filtered)</div>
+                            <button type="button" @click="doExport('excel', 'all'); open = false" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,20H14L12,16.6L10,20H8.2L11,15.5L8.2,11H10L12,14.4L14,11H15.8L13,15.5L15.8,20M13,9V3.5L18.5,9H13Z"/></svg>
+                                Excel (.xls)
+                            </button>
+                            <button type="button" @click="doExport('csv', 'all'); open = false" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                CSV File
+                            </button>
+                        </div>
+                    </div>
+
                     {{-- Column Visibility Menu --}}
                     <div class="relative" x-data="{ open: false }">
                         <button type="button" @click="open = !open" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-1">
@@ -259,10 +414,36 @@
             <div class="flex flex-wrap items-end gap-3">
                 <button @click="doSync()" :disabled="syncing" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                     <svg x-show="syncing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    <span x-text="syncing ? 'Syncing...' : 'Start Sync (Fixed Window)'"></span>
+                    <span x-text="syncing ? 'Syncing...' : 'Start Chunked Sync (Monthly)'"></span>
                 </button>
             </div>
-            <div x-show="syncMessage" x-cloak class="mt-3 text-sm px-3 py-2 rounded-lg" :class="syncSuccess ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'" x-text="syncMessage"></div>
+            
+            {{-- Progress State --}}
+            <div x-show="syncing || syncResults.length > 0" x-cloak class="mt-4 p-3 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-blue-100 dark:border-blue-900">
+                <div class="flex justify-between items-center text-xs font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                    <span x-text="syncCurrentStep"></span>
+                    <span x-text="syncProgress + '%'"></span>
+                </div>
+                
+                {{-- Progress Bar --}}
+                <div class="w-full bg-blue-100 dark:bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="'width: ' + syncProgress + '%'"></div>
+                </div>
+
+                {{-- Detail Results --}}
+                <div class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                    <template x-for="(res, index) in syncResults.slice().reverse()" :key="index">
+                        <div class="flex justify-between text-[10px] items-center py-1 border-b border-blue-50 dark:border-blue-900 last:border-0">
+                            <span class="font-medium text-slate-600 dark:text-slate-400" x-text="res.label"></span>
+                            <div class="flex items-center gap-2">
+                                <span x-show="res.success" class="text-emerald-600 dark:text-emerald-400 font-bold" x-text="'+' + res.count"></span>
+                                <span x-show="!res.success" class="text-red-500" x-text="'Failed'"></span>
+                                <svg x-show="res.success" class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -272,6 +453,9 @@
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 select-none">
                     <tr x-ref="tableHeader">
+                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-50 w-10">
+                            <input type="checkbox" @change="toggleAll($event.target.checked)" :checked="isAllSelected()" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        </th>
                         @foreach($tablePrefs['columns'] as $index => $col)
                             <th x-show="columns[{{ $index }}].visible" 
                                 :style="{ width: columns[{{ $index }}].width + 'px' }"
@@ -329,7 +513,10 @@
                             }
                         @endphp
                         
-                        <tr class="{{ $rowClass }}">
+                        <tr class="{{ $rowClass }}" :class="selectedIds.includes({{ $rec->id }}) ? '!bg-emerald-50/50 dark:!bg-emerald-900/20' : ''">
+                            <td class="px-3 py-3 text-left">
+                                <input type="checkbox" :value="{{ $rec->id }}" x-model="selectedIds" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                            </td>
                             @foreach($tablePrefs['columns'] as $index => $col)
                                 <td x-show="columns[{{ $index }}].visible" class="px-3 py-3 text-xs">
                                     @if($col['id'] === 'so_name')
