@@ -24,8 +24,8 @@ class InvoiceSubscriptionController extends Controller
         $user = auth()->user();
         
         $defaultColumns = [
-            ['id' => 'so_name', 'label' => 'SO Number', 'visible' => true, 'width' => '120', 'sortable' => true],
             ['id' => 'partner_name', 'label' => 'Customer', 'visible' => true, 'width' => '200', 'sortable' => true],
+            ['id' => 'so_name', 'label' => 'SO Number', 'visible' => true, 'width' => '120', 'sortable' => true],
             ['id' => 'rental_status', 'label' => 'Rental Status', 'visible' => true, 'width' => '120', 'sortable' => true],
             ['id' => 'rental_type', 'label' => 'Rental Type', 'visible' => false, 'width' => '120', 'sortable' => true],
             ['id' => 'period_type', 'label' => 'Period Type', 'visible' => false, 'width' => '120', 'sortable' => true],

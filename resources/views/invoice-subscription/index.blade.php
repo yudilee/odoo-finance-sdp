@@ -30,6 +30,19 @@
         opacity: 0.2;
         background: #10b981 !important;
     }
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.2);
+        border-radius: 10px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.4);
+    }
 </style>
 
 <div x-data="{
@@ -249,13 +262,35 @@
             animation: 150,
             handle: '.sort-handle',
             ghostClass: 'sortable-ghost',
+            filter: '.no-sort', // Ignore the checkbox row
+            onEnd: (evt) => {
+                // Adjust for the persistent checkbox column at index 0
+                const oldIndex = evt.oldIndex - 1;
+                const newIndex = evt.newIndex - 1;
+                
+                if (oldIndex < 0 || newIndex < 0) return;
+
+                const newColumns = [...this.columns];
+                const item = newColumns.splice(oldIndex, 1)[0];
+                newColumns.splice(newIndex, 0, item);
+                this.columns = newColumns;
+                this.savePrefs();
+                window.location.reload(); 
+            }
+        });
+
+        // Menu Sortable
+        const menuEl = this.$refs.columnMenu;
+        Sortable.create(menuEl, {
+            animation: 150,
+            handle: '.menu-sort-handle',
+            ghostClass: 'sortable-ghost',
             onEnd: (evt) => {
                 const newColumns = [...this.columns];
                 const item = newColumns.splice(evt.oldIndex, 1)[0];
                 newColumns.splice(evt.newIndex, 0, item);
                 this.columns = newColumns;
                 this.savePrefs();
-                // We refresh to ensure the body cells match the new Blade render order
                 window.location.reload();
             }
         });
@@ -378,12 +413,18 @@
                         </button>
                         <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2">
                             <div class="px-3 py-2 text-xs font-semibold text-slate-500 uppercase border-b border-slate-100 dark:border-slate-700 mb-2">Toggle Columns</div>
-                            <div class="space-y-1 overflow-y-auto max-h-64">
+                            <div class="space-y-1 overflow-y-auto max-h-64 scrollbar-thin" x-ref="columnMenu">
                                 <template x-for="(col, index) in columns" :key="col.id">
-                                    <label class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors">
-                                        <input type="checkbox" x-model="col.visible" @change="savePrefs()" class="rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500">
-                                        <span class="text-sm text-slate-700 dark:text-slate-300" x-text="col.label"></span>
-                                    </label>
+                                    <div class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg group transition-colors">
+                                        {{-- Drag handle --}}
+                                        <div class="menu-sort-handle cursor-move text-slate-300 hover:text-emerald-500 transition-colors">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M7 15h2V17H7V15M15 15h2V17h-2V15M11 15h2V17h-2V15M7 11h2V13H7V11M15 11h2V13h-2V11M11 11h2V13h-2V11M7 7h2V9H7V7M15 7h2V9h-2V7M11 7h2V9h-2V7Z"/></svg>
+                                        </div>
+                                        <label class="flex-1 flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" x-model="col.visible" @change="savePrefs()" class="rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500">
+                                            <span class="text-[13px] text-slate-700 dark:text-slate-300 truncate" x-text="col.label"></span>
+                                        </label>
+                                    </div>
                                 </template>
                             </div>
                             <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
@@ -453,7 +494,7 @@
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 select-none">
                     <tr x-ref="tableHeader">
-                        <th class="px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-50 w-10">
+                        <th class="no-sort px-3 py-3 text-left font-medium text-slate-600 dark:text-slate-400 sticky top-0 bg-slate-50 dark:bg-slate-900 z-50 w-10">
                             <input type="checkbox" @change="toggleAll($event.target.checked)" :checked="isAllSelected()" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                         </th>
                         @foreach($tablePrefs['columns'] as $index => $col)
