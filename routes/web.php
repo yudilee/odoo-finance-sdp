@@ -11,6 +11,7 @@ use App\Http\Controllers\InvoiceDriverController;
 use App\Http\Controllers\InvoiceOtherController;
 use App\Http\Controllers\InvoiceRentalController;
 use App\Http\Controllers\InvoiceVehicleController;
+use App\Http\Controllers\InvoiceSubscriptionController;
 use App\Http\Controllers\Admin\PrintLogController;
 
 // ──────────────────────────────────────────────
@@ -107,6 +108,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceVehicleController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceVehicleController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceVehicleController::class, 'printHtml'])->name('print-html');
+    });
+
+    // Invoice Subscription (Check Invoice Subscription – Rental Periods)
+    Route::group(['prefix' => 'invoice-subscription', 'as' => 'invoice-subscription.', 'middleware' => 'role:invoice'], function () {
+        Route::get('/', [InvoiceSubscriptionController::class, 'index'])->name('index');
+        Route::post('/sync', [InvoiceSubscriptionController::class, 'sync'])->name('sync');
+        Route::post('/preferences', [InvoiceSubscriptionController::class, 'updatePreferences'])->name('preferences.update');
+        Route::post('/preferences/reset', [InvoiceSubscriptionController::class, 'resetPreferences'])->name('preferences.reset');
     });
 
 

@@ -654,6 +654,116 @@ class OdooService
     }
 
     /**
+     * Fetch Subscription Invoice Periods from Odoo (model: rental.period.invoice)
+     * Queries invoice periods where invoice_date is within [dateFrom, dateTo]
+     * and the parent sale.order has rental_type = Subscription.
+     *
+     * @param string $dateFrom  Start date (Y-m-d), e.g. '2025-04-01'
+     * @param string $dateTo    End date   (Y-m-d), e.g. today+15 days
+     */
+    public function fetchSubscriptionInvoicePeriods(string $dateFrom, string $dateTo): array
+    {
+        try {
+            $domain = [
+                ['invoice_date', '>=', $dateFrom],
+                ['invoice_date', '<=', $dateTo],
+                ['rental_order_id.rental_type', '=', 'subscription'],
+            ];
+
+            // Search IDs on the period model directly (most efficient)
+            $allIds = $this->execute('rental.period.invoice', 'search', [$domain], ['order' => 'invoice_date asc']);
+
+            if (empty($allIds)) {
+                return [
+                    'success' => true,
+                    'data'    => [],
+                    'count'   => 0,
+                    'message' => 'No subscription invoice periods found for the given date range.',
+                ];
+            }
+
+            $exportFields = [
+                'id',                                        // 0: Odoo external ID
+                'rental_order_id/name',                      // 1: SO name (R/2026/...)
+                'rental_order_id/partner_id',                // 2: Customer display name
+                'rental_order_id/rental_status',             // 3: Reserved / Pickedup / Returned
+                'rental_order_id/rental_type',               // 4: Subscription
+                'rental_order_id/actual_start_rental',       // 5: Rental start
+                'rental_order_id/actual_end_rental',         // 6: Rental end
+                'rental_order_id/sale_invoice_period_id',    // 7: Monthly / Weekly
+                'product_id',                                // 8: Vehicle/product name
+                'invoice_date',                              // 9: Expected invoice date
+                'start_rental_period_date',                  // 10: Period start
+                'end_rental_period_date',                    // 11: Period end
+                'invoice_id',                                // 12: Invoice display (INVRS/... + refs)
+                'invoice_id/state',                          // 13: draft / posted
+                'invoice_id/payment_state',                  // 14: paid / not_paid
+                'invoice_id/name',                           // 15: Invoice number only
+                'price_unit',                                // 16: Unit price
+                'rental_uom',                                // 17: month / day
+            ];
+
+            $entries    = [];
+            $chunkSize  = 500;
+            $idChunks   = array_chunk($allIds, $chunkSize);
+
+            foreach ($idChunks as $chunk) {
+                $result = $this->execute('rental.period.invoice', 'export_data', [$chunk, $exportFields]);
+
+                if (!isset($result['datas'])) {
+                    continue;
+                }
+
+                foreach ($result['datas'] as $row) {
+                    $rawId     = $row[0]  ?? '';
+                    $invoiceRef = $row[12] ?? '';   // full display e.g. "INVRS/2025/03192 (refs...)"
+                    $invoiceName = $row[15] ?? '';   // clean name e.g. "INVRS/2025/03192"
+
+                    // Parse numeric ID from external ID string (e.g. __export__.rental_period_invoice_1903_hash)
+                    $numericId = null;
+                    if (preg_match('/rental_period_invoice_(\d+)_/', $rawId, $m)) {
+                        $numericId = (int)$m[1];
+                    }
+
+                    $entries[] = [
+                        'period_odoo_id'      => $rawId,
+                        'period_numeric_id'   => $numericId,
+                        'so_name'             => $row[1] ?? '',
+                        'partner_name'        => $row[2] ?? '',
+                        'rental_status'       => $row[3] ?? '',
+                        'rental_type'         => $row[4] ?? 'Subscription',
+                        'actual_start_rental' => !empty($row[5]) ? substr($row[5], 0, 10) : null,
+                        'actual_end_rental'   => !empty($row[6]) ? substr($row[6], 0, 10) : null,
+                        'period_type'         => $row[7] ?? '',
+                        'product_name'        => $row[8] ?? '',
+                        'invoice_date'        => $row[9] ?? null,
+                        'period_start'        => $row[10] ?? null,
+                        'period_end'          => $row[11] ?? null,
+                        'invoice_ref'         => $invoiceRef,
+                        'invoice_name'        => $invoiceName,
+                        'invoice_state'       => $row[13] ?? null,
+                        'payment_state'       => $row[14] ?? null,
+                        'price_unit'          => (float)($row[16] ?? 0),
+                        'rental_uom'          => $row[17] ?? '',
+                    ];
+                }
+            }
+
+            return [
+                'success' => true,
+                'data'    => $entries,
+                'count'   => count($entries),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Fetch failed: ' . $e->getMessage(),
+                'data'    => [],
+            ];
+        }
+    }
+
+    /**
      * Fetch Invoice Rental entries from Odoo using export_data
      * Fetches both "Invoice Sewa Retail" and "Invoice Sewa Subscription" journals
      */
