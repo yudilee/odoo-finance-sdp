@@ -6,7 +6,7 @@
 @section('content')
 <div class="max-w-2xl">
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-        <form action="{{ route('settings.update') }}" method="POST" class="p-6 space-y-6">
+        <form action="{{ route('admin.settings.update') }}" method="POST" class="p-6 space-y-6">
             @csrf
             
             <div class="space-y-4">
@@ -105,7 +105,7 @@
                 <p class="text-sm text-red-800 dark:text-red-300 font-medium">Clear All Local Data</p>
                 <p class="text-xs text-red-600 dark:text-red-400/80 mt-1">This will permanently delete all local journal entries and lines. This action cannot be undone.</p>
                 
-                <form action="{{ route('settings.empty-database') }}" method="POST" class="mt-4" onsubmit="return confirm('Are you sure you want to empty the entire database? This action is permanent.');">
+                <form action="{{ route('admin.settings.empty-database') }}" method="POST" class="mt-4" onsubmit="return confirm('Are you sure you want to empty the entire database? This action is permanent.');">
                     @csrf
                     <button type="submit" class="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition-colors">
                         Empty Database Now
