@@ -61,6 +61,48 @@
             </div>
         </form>
     </div>
+
+    {{-- Security Section --}}
+    <div class="mt-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <form action="{{ route('profile.password.update') }}" method="POST" class="p-6 space-y-6">
+            @csrf
+            
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Change Password</h3>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Current Password</label>
+                        <input type="password" name="current_password" required
+                            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                        @error('current_password') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">New Password</label>
+                        <input type="password" name="new_password" required
+                            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-800 dark:text-slate-100">
+                        @error('new_password') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Confirm New Password</label>
+                        <input type="password" name="new_password_confirmation" required
+                            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-800 dark:text-slate-100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-slate-800 dark:bg-slate-700 text-white text-sm font-bold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-sm">
+                    Update Password
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <style>

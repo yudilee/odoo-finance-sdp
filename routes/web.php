@@ -111,7 +111,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Invoice Subscription (Check Invoice Subscription – Rental Periods)
-    Route::group(['prefix' => 'invoice-subscription', 'as' => 'invoice-subscription.', 'middleware' => 'role:invoice'], function () {
+    Route::group(['prefix' => 'invoice-subscription', 'as' => 'invoice-subscription.', 'middleware' => 'role:admin,invoice'], function () {
         Route::get('/', [InvoiceSubscriptionController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceSubscriptionController::class, 'sync'])->name('sync');
         Route::post('/preferences', [InvoiceSubscriptionController::class, 'updatePreferences'])->name('preferences.update');
@@ -173,5 +173,6 @@ Route::middleware('auth')->group(function () {
     Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
         Route::get('/preferences', [\App\Http\Controllers\PreferenceController::class, 'index'])->name('preferences');
         Route::post('/preferences', [\App\Http\Controllers\PreferenceController::class, 'update'])->name('preferences.update');
+        Route::post('/password', [\App\Http\Controllers\PreferenceController::class, 'updatePassword'])->name('password.update');
     });
 });
