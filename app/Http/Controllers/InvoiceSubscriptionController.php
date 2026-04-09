@@ -40,6 +40,7 @@ class InvoiceSubscriptionController extends Controller
             ['id' => 'invoice_ref', 'label' => 'Invoice Ref', 'visible' => false, 'width' => '150', 'sortable' => true],
             ['id' => 'invoice_state', 'label' => 'Invoice State', 'visible' => false, 'width' => '120', 'sortable' => true],
             ['id' => 'payment_state', 'label' => 'Payment State', 'visible' => false, 'width' => '120', 'sortable' => true],
+            ['id' => 'invoice_amount', 'label' => 'Invoice Price', 'visible' => true, 'width' => '120', 'sortable' => true],
             ['id' => 'price_unit', 'label' => 'Price Unit', 'visible' => false, 'width' => '100', 'sortable' => true],
             ['id' => 'rental_uom', 'label' => 'Unit of Measure', 'visible' => false, 'width' => '100', 'sortable' => true],
             ['id' => 'status', 'label' => 'Status', 'visible' => true, 'width' => '150', 'sortable' => false],
@@ -245,7 +246,8 @@ class InvoiceSubscriptionController extends Controller
                 ]);
             }
 
-            $savedCount = $sync->saveInvoiceSubscriptions($result['data']);
+            $truncate = $request->boolean('truncate', false);
+            $savedCount = $sync->saveInvoiceSubscriptions($result['data'], $truncate);
 
             ImportLog::create([
                 'source'       => 'odoo_subscription_periods',
@@ -430,6 +432,7 @@ class InvoiceSubscriptionController extends Controller
             'invoice_date' => $row->invoice_date ? \Carbon\Carbon::parse($row->invoice_date)->format('d M Y') : '',
             'synced_at'    => $row->synced_at ? \Carbon\Carbon::parse($row->synced_at)->format('d M Y H:i') : '',
             'price_unit'   => number_format($row->price_unit, 2),
+            'invoice_amount' => number_format($row->invoice_amount, 2),
             'actual_start_rental' => $row->actual_start_rental ? \Carbon\Carbon::parse($row->actual_start_rental)->format('d M Y') : '',
             'actual_end_rental'   => $row->actual_end_rental ? \Carbon\Carbon::parse($row->actual_end_rental)->format('d M Y') : '',
             default        => $row->{$colId} ?? ''

@@ -11,6 +11,7 @@ class InvoiceDriver extends Model
         'name',
         'partner_name',
         'invoice_date',
+        'invoice_date_due',
         'payment_term',
         'ref',
         'journal_name',
@@ -29,6 +30,7 @@ class InvoiceDriver extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'invoice_date_due' => 'date',
         'amount_untaxed' => 'decimal:2',
         'amount_tax' => 'decimal:2',
         'amount_total' => 'decimal:2',

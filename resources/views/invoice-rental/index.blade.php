@@ -327,6 +327,27 @@
                                 <button type="button" onclick="printInvoice('{{ $invoice->name }}', '{{ route('invoice-rental.print', $invoice) }}')" title="Print PDF" class="text-slate-400 hover:text-indigo-600 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 </button>
+                                <div x-data="{ open: false, printContract: true }" @click.away="open = false" class="relative" style="display:inline-block;">
+                                    <button @click.prevent="open = !open" title="Print Kuitansi" class="text-slate-400 hover:text-amber-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                    </button>
+                                    <div x-show="open" x-cloak class="absolute left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 py-1" style="top: 100%;">
+                                        <div class="px-3 py-2 border-b border-slate-100 dark:border-slate-700">
+                                            <label class="flex items-center space-x-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                                                <input type="checkbox" x-model="printContract" class="rounded border-slate-300 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5">
+                                                <span>Print No Contract/PO</span>
+                                            </label>
+                                        </div>
+                                        <a :href="'{{ route('invoice-rental.kuitansi-pdf', $invoice) }}' + (printContract ? '?show_contract=1' : '?show_contract=0')" target="_blank" class="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            Download PDF
+                                        </a>
+                                        <a :href="'{{ route('invoice-rental.kuitansi-html', $invoice) }}' + (printContract ? '?show_contract=1' : '?show_contract=0')" target="_blank" class="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            Print Browser
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </td>
                         <td x-show="columns.date.visible" class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ $invoice->invoice_date->format('Y-m-d') }}</td>

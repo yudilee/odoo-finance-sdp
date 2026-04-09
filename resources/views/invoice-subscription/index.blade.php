@@ -97,8 +97,11 @@
             const chunk = chunks[i];
             this.syncCurrentStep = `Processing ${chunk.label}...`;
             
+            // Only truncate the table on the very first chunk of a Deep Re-Sync
+            const isTruncate = (isFull && i === 0) ? '1' : '0';
+
             try {
-                const url = `{{ route('invoice-subscription.sync', [], false) }}?from=${chunk.from}&to=${chunk.to}`;
+                const url = `{{ route('invoice-subscription.sync', [], false) }}?from=${chunk.from}&to=${chunk.to}&truncate=${isTruncate}`;
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -650,6 +653,8 @@
                                         <span class="capitalize">{{ $rec->payment_state ?: '-' }}</span>
                                     @elseif($col['id'] === 'price_unit')
                                         {{ number_format($rec->price_unit, 2) }}
+                                    @elseif($col['id'] === 'invoice_amount')
+                                        {{ number_format($rec->invoice_amount, 2) }}
                                     @elseif($col['id'] === 'rental_uom')
                                         {{ $rec->rental_uom ?: '-' }}
                                     @elseif($col['id'] === 'status')

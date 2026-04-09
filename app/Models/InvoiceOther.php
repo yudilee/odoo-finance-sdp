@@ -11,8 +11,10 @@ class InvoiceOther extends Model
         'name',
         'partner_name',
         'invoice_date',
+        'invoice_date_due',
         'payment_term',
         'ref',
+        'contract_ref',
         'journal_name',
         'amount_untaxed',
         'amount_tax',
@@ -27,6 +29,7 @@ class InvoiceOther extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'invoice_date_due' => 'date',
         'amount_untaxed' => 'decimal:2',
         'amount_tax' => 'decimal:2',
         'amount_total' => 'decimal:2',

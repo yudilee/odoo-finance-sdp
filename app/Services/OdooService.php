@@ -341,7 +341,9 @@ class OdooService
                 'narration',                             // 17: Terms and Condition
                 'partner_id/vat',                        // 18: NPWP
                 'contract_ref',                          // 19: Contract Ref
-                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Rental Contract Ref from related SO
+                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
+                'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
+                'invoice_date_due',                      // 22: Due date
             ];
 
             $entries = [];
@@ -369,6 +371,7 @@ class OdooService
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
                             'invoice_date' => $row[2] ?? '',
+                            'invoice_date_due' => $row[22] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Driver',
@@ -382,7 +385,7 @@ class OdooService
                             'partner_address_complete' => $row[16] ?? '',
                             'narration' => $row[17] ?? '',
                             'partner_npwp' => $row[18] ?? '',
-                            'contract_ref' => !empty($row[19]) ? $row[19] : ($row[20] ?? ''),
+                            'contract_ref' => !empty($row[19]) ? $row[19] : (!empty($row[20]) ? $row[20] : ($row[21] ?? '')),
                             'lines' => [],
                         ];
                     }
@@ -393,8 +396,12 @@ class OdooService
                         $lineQty = (float)($row[10] ?? 0);
                         $linePrice = (float)($row[11] ?? 0);
 
-                        if (empty($currentEntry['contract_ref']) && !empty($row[20])) {
-                            $currentEntry['contract_ref'] = $row[20];
+                        if (empty($currentEntry['contract_ref'])) {
+                            if (!empty($row[20])) {
+                                $currentEntry['contract_ref'] = $row[20];
+                            } elseif (!empty($row[21])) {
+                                $currentEntry['contract_ref'] = $row[21];
+                            }
                         }
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
@@ -463,6 +470,11 @@ class OdooService
                 'partner_id/contact_address',            // 15: Address (multiline)
                 'partner_id/contact_address_complete',   // 16: Address (single line)
                 'narration',                             // 17: Terms and Condition
+                'partner_id/vat',                        // 18: NPWP
+                'contract_ref',                          // 19: Contract Ref
+                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
+                'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
+                'invoice_date_due',                      // 22: Due date
             ];
 
             $entries = [];
@@ -489,6 +501,7 @@ class OdooService
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
                             'invoice_date' => $row[2] ?? '',
+                            'invoice_date_due' => $row[22] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Other',
@@ -501,6 +514,8 @@ class OdooService
                             'partner_address' => $row[15] ?? '',
                             'partner_address_complete' => $row[16] ?? '',
                             'narration' => $row[17] ?? '',
+                            'partner_npwp' => $row[18] ?? '',
+                            'contract_ref' => !empty($row[19]) ? $row[19] : (!empty($row[20]) ? $row[20] : ($row[21] ?? '')),
                             'lines' => [],
                         ];
                     }
@@ -511,6 +526,13 @@ class OdooService
                         $linePrice = (float)($row[11] ?? 0);
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
+                            if (empty($currentEntry['contract_ref'])) {
+                                if (!empty($row[20])) {
+                                    $currentEntry['contract_ref'] = $row[20];
+                                } elseif (!empty($row[21])) {
+                                    $currentEntry['contract_ref'] = $row[21];
+                                }
+                            }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
@@ -577,6 +599,10 @@ class OdooService
                 'invoice_line_ids/serial_ids/name',         // 18: Serial = No Polisi
                 'partner_id/vat',                        // 19: NPWP
                 'narration',                             // 20: Terms and Condition
+                'contract_ref',                          // 21: Contract Ref
+                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 22: Path A: Contract from Line
+                'rental_period_id/rental_order_id/rental_contract_id/name', // 23: Path B: Contract from Period
+                'invoice_date_due',                      // 24: Due date
             ];
 
             $entries = [];
@@ -603,6 +629,7 @@ class OdooService
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
                             'invoice_date' => $row[2] ?? '',
+                            'invoice_date_due' => $row[24] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Penjualan Kendaraan',
@@ -616,6 +643,7 @@ class OdooService
                             'partner_address_complete' => $row[16] ?? '',
                             'partner_npwp' => $row[19] ?? '',
                             'narration' => $row[20] ?? '',
+                            'contract_ref' => !empty($row[21]) ? $row[21] : (!empty($row[22]) ? $row[22] : ($row[23] ?? '')),
                             'lines' => [],
                         ];
                     }
@@ -635,6 +663,13 @@ class OdooService
                         }
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
+                            if (empty($currentEntry['contract_ref'])) {
+                                if (!empty($row[22])) {
+                                    $currentEntry['contract_ref'] = $row[22];
+                                } elseif (!empty($row[23])) {
+                                    $currentEntry['contract_ref'] = $row[23];
+                                }
+                            }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
@@ -710,6 +745,7 @@ class OdooService
                 'invoice_id/name',                           // 15: Invoice number only
                 'price_unit',                                // 16: Unit price
                 'rental_uom',                                // 17: month / day
+                'invoice_id/amount_total',                   // 18: Actual invoice price
             ];
 
             $entries    = [];
@@ -724,9 +760,20 @@ class OdooService
                 }
 
                 foreach ($result['datas'] as $row) {
-                    $rawId     = $row[0]  ?? '';
-                    $invoiceRef = $row[12] ?? '';   // full display e.g. "INVRS/2025/03192 (refs...)"
+                    $rawId       = $row[0]  ?? '';
+                    $invoiceRef  = $row[12] ?? '';   // full display e.g. "INVRS/2025/03192 (refs...)"
                     $invoiceName = $row[15] ?? '';   // clean name e.g. "INVRS/2025/03192"
+                    $rentalStatus = $row[3]  ?? null;
+                    $invoiceState = $row[13] ?? null;
+                    $priceUnit    = (float)($row[16] ?? 0);
+                    $invoiceAmount = (float)($row[18] ?? 0);
+
+                    // Skip cancelled rentals
+                    if ($rentalStatus === 'cancel' || $rentalStatus === 'cancelled') continue;
+
+                    // Skip if it has an invoice, but the Invoice Price is 0.
+                    // If it has NO invoice (Not Invoiced), we keep it.
+                    if (!empty($invoiceName) && $invoiceAmount == 0) continue;
 
                     // Parse numeric ID from external ID string (e.g. __export__.rental_period_invoice_1903_hash)
                     $numericId = null;
@@ -739,7 +786,7 @@ class OdooService
                         'period_numeric_id'   => $numericId,
                         'so_name'             => $row[1] ?? '',
                         'partner_name'        => $row[2] ?? '',
-                        'rental_status'       => $row[3] ?? '',
+                        'rental_status'       => $rentalStatus,
                         'rental_type'         => $row[4] ?? 'Subscription',
                         'actual_start_rental' => !empty($row[5]) ? substr($row[5], 0, 10) : null,
                         'actual_end_rental'   => !empty($row[6]) ? substr($row[6], 0, 10) : null,
@@ -750,9 +797,10 @@ class OdooService
                         'period_end'          => $row[11] ?? null,
                         'invoice_ref'         => $invoiceRef,
                         'invoice_name'        => $invoiceName,
-                        'invoice_state'       => $row[13] ?? null,
+                        'invoice_state'       => $invoiceState,
                         'payment_state'       => $row[14] ?? null,
-                        'price_unit'          => (float)($row[16] ?? 0),
+                        'price_unit'          => $priceUnit,
+                        'invoice_amount'      => $invoiceAmount,
                         'rental_uom'          => $row[17] ?? '',
                     ];
                 }
@@ -804,7 +852,7 @@ class OdooService
                 'amount_untaxed',                                         // 6: Subtotal
                 'amount_tax',                                             // 7: Tax
                 'amount_total',                                           // 8: Total
-                'invoice_line_ids/sale_order_id/name',                       // 9: Sale order id name (?) - wait, excel sheet had: 'invoice_line_ids/sale_order_id'
+                'invoice_line_ids/sale_order_id/name',                       // 9: Sale order id name
                 'invoice_line_ids/name',                                  // 10: Line description
                 'invoice_line_ids/serial_ids/name',                       // 11: Serial number
                 'invoice_line_ids/sale_order_id/actual_start_rental',        // 12: Actual start rental
@@ -819,6 +867,9 @@ class OdooService
                 'partner_id/contact_address',                             // 21: Address (multiline)
                 'partner_id/contact_address_complete',                    // 22: Address (single line)
                 'narration',                                              // 23: Terms and Condition
+                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 24: Path A: Contract from Line
+                'rental_period_id/rental_order_id/rental_contract_id/name', // 25: Path B: Contract from Period
+                'invoice_date_due',                                       // 26: Due date
             ];
 
             $entries = [];
@@ -845,6 +896,7 @@ class OdooService
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
                             'invoice_date' => $row[2] ?? '',
+                            'invoice_date_due' => $row[26] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Rental',
@@ -857,6 +909,7 @@ class OdooService
                             'partner_address' => $row[21] ?? '',
                             'partner_address_complete' => $row[22] ?? '',
                             'narration' => $row[23] ?? '',
+                            'contract_ref' => !empty($row[24]) ? $row[24] : ($row[25] ?? ''),
                             'lines' => [],
                         ];
                     }
@@ -873,6 +926,13 @@ class OdooService
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
 
                         if (!empty($lineDesc) || $qty > 0 || $priceUnit > 0) {
+                            if (empty($currentEntry['contract_ref'])) {
+                                if (!empty($row[24])) {
+                                    $currentEntry['contract_ref'] = $row[24];
+                                } elseif (!empty($row[25])) {
+                                    $currentEntry['contract_ref'] = $row[25];
+                                }
+                            }
                             $currentEntry['lines'][] = [
                                 'sale_order_id' => $soId,
                                 'description' => $lineDesc,

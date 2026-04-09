@@ -27,6 +27,7 @@ class InvoiceSubscription extends Model
         'invoice_ref',
         'invoice_state',
         'payment_state',
+        'invoice_amount',
         'synced_at',
     ];
 
@@ -37,6 +38,7 @@ class InvoiceSubscription extends Model
         'period_end'          => 'date',
         'invoice_date'        => 'date',
         'price_unit'          => 'decimal:2',
+        'invoice_amount'      => 'decimal:2',
         'synced_at'           => 'datetime',
     ];
 

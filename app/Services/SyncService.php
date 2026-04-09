@@ -67,6 +67,7 @@ class SyncService
                     'invoice_date' => $entry['invoice_date'],
                     'payment_term' => $entry['payment_term'] ?? null,
                     'ref' => $entry['ref'] ?? null,
+                    'contract_ref' => $entry['contract_ref'] ?? null,
                     'journal_name' => $entry['journal_name'] ?? 'Invoice Other',
                     'amount_untaxed' => $entry['amount_untaxed'],
                     'amount_tax' => $entry['amount_tax'],
@@ -107,6 +108,7 @@ class SyncService
                     'invoice_date' => $entry['invoice_date'],
                     'payment_term' => $entry['payment_term'] ?? null,
                     'ref' => $entry['ref'] ?? null,
+                    'contract_ref' => $entry['contract_ref'] ?? null,
                     'journal_name' => $entry['journal_name'] ?? 'Invoice Penjualan Kendaraan',
                     'amount_untaxed' => $entry['amount_untaxed'],
                     'amount_tax' => $entry['amount_tax'],
@@ -151,6 +153,7 @@ class SyncService
                     'invoice_date' => $entry['invoice_date'],
                     'payment_term' => $entry['payment_term'] ?? null,
                     'ref' => $entry['ref'] ?? null,
+                    'contract_ref' => $entry['contract_ref'] ?? null,
                     'journal_name' => $entry['journal_name'] ?? 'Invoice Rental',
                     'amount_untaxed' => $entry['amount_untaxed'],
                     'amount_tax' => $entry['amount_tax'],
@@ -180,38 +183,51 @@ class SyncService
     }
 
     /**
-     * Save Invoice Subscription entries
+     * Save Invoice Subscription entries.
+     * 
+     * @param array $entries      The records to save
+     * @param bool  $truncateFirst  If true, wipe the table first (Deep Re-Sync). 
+     *                              If false, upsert by period_odoo_id (Fast Sync).
      */
-    public function saveInvoiceSubscriptions(array $entries): int
+    public function saveInvoiceSubscriptions(array $entries, bool $truncateFirst = false): int
     {
-        $count = 0;
+        if ($truncateFirst) {
+            // Deep Re-Sync: wipe the table to ensure a clean state
+            InvoiceSubscription::truncate();
+        }
+
+        $count    = 0;
         $syncedAt = now();
+
         foreach ($entries as $entry) {
             if (empty($entry['period_odoo_id'])) continue;
 
+            $data = [
+                'period_numeric_id'   => $entry['period_numeric_id'] ?? null,
+                'so_name'             => $entry['so_name'] ?? null,
+                'partner_name'        => $entry['partner_name'] ?? null,
+                'rental_status'       => $entry['rental_status'] ?? null,
+                'rental_type'         => $entry['rental_type'] ?? 'Subscription',
+                'actual_start_rental' => $entry['actual_start_rental'] ?: null,
+                'actual_end_rental'   => $entry['actual_end_rental'] ?: null,
+                'period_type'         => $entry['period_type'] ?? null,
+                'product_name'        => $entry['product_name'] ?? null,
+                'invoice_date'        => $entry['invoice_date'] ?: null,
+                'period_start'        => $entry['period_start'] ?: null,
+                'period_end'          => $entry['period_end'] ?: null,
+                'price_unit'          => $entry['price_unit'] ?? 0,
+                'invoice_amount'      => $entry['invoice_amount'] ?? 0,
+                'rental_uom'          => $entry['rental_uom'] ?? null,
+                'invoice_name'        => $entry['invoice_name'] ?: null,
+                'invoice_ref'         => $entry['invoice_ref'] ?: null,
+                'invoice_state'       => $entry['invoice_state'] ?: null,
+                'payment_state'       => $entry['payment_state'] ?: null,
+                'synced_at'           => $syncedAt,
+            ];
+
             InvoiceSubscription::updateOrCreate(
                 ['period_odoo_id' => $entry['period_odoo_id']],
-                [
-                    'period_numeric_id'   => $entry['period_numeric_id'] ?? null,
-                    'so_name'             => $entry['so_name'] ?? null,
-                    'partner_name'        => $entry['partner_name'] ?? null,
-                    'rental_status'       => $entry['rental_status'] ?? null,
-                    'rental_type'         => $entry['rental_type'] ?? 'Subscription',
-                    'actual_start_rental' => $entry['actual_start_rental'] ?: null,
-                    'actual_end_rental'   => $entry['actual_end_rental'] ?: null,
-                    'period_type'         => $entry['period_type'] ?? null,
-                    'product_name'        => $entry['product_name'] ?? null,
-                    'invoice_date'        => $entry['invoice_date'] ?: null,
-                    'period_start'        => $entry['period_start'] ?: null,
-                    'period_end'          => $entry['period_end'] ?: null,
-                    'price_unit'          => $entry['price_unit'] ?? 0,
-                    'rental_uom'          => $entry['rental_uom'] ?? null,
-                    'invoice_name'        => $entry['invoice_name'] ?: null,
-                    'invoice_ref'         => $entry['invoice_ref'] ?: null,
-                    'invoice_state'       => $entry['invoice_state'] ?: null,
-                    'payment_state'       => $entry['payment_state'] ?: null,
-                    'synced_at'           => $syncedAt,
-                ]
+                $data
             );
             $count++;
         }

@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceDriverController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceDriverController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceDriverController::class, 'printHtml'])->name('print-html');
+        Route::get('/{invoice}/kuitansi-pdf', [InvoiceDriverController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
+        Route::get('/{invoice}/kuitansi-html', [InvoiceDriverController::class, 'kuitansiHtml'])->name('kuitansi-html');
     });
 
     // Invoice Other
@@ -82,6 +84,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceOtherController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceOtherController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceOtherController::class, 'printHtml'])->name('print-html');
+        Route::get('/{invoice}/kuitansi-pdf', [InvoiceOtherController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
+        Route::get('/{invoice}/kuitansi-html', [InvoiceOtherController::class, 'kuitansiHtml'])->name('kuitansi-html');
     });
 
     // Invoice Rental
@@ -93,6 +97,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceRentalController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceRentalController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceRentalController::class, 'printHtml'])->name('print-html');
+        Route::get('/{invoice}/kuitansi-pdf', [InvoiceRentalController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
+        Route::get('/{invoice}/kuitansi-html', [InvoiceRentalController::class, 'kuitansiHtml'])->name('kuitansi-html');
     });
 
     // Invoice Vehicle (Penjualan Kendaraan)
@@ -104,6 +110,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceVehicleController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceVehicleController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceVehicleController::class, 'printHtml'])->name('print-html');
+        Route::get('/{invoice}/kuitansi-pdf', [InvoiceVehicleController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
+        Route::get('/{invoice}/kuitansi-html', [InvoiceVehicleController::class, 'kuitansiHtml'])->name('kuitansi-html');
     });
 
     // Invoice Subscription (Check Invoice Subscription – Rental Periods)

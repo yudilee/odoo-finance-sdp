@@ -195,6 +195,7 @@ class InvoiceOtherController extends Controller
                 [
                     'partner_name' => $entry['partner_name'],
                     'invoice_date' => $entry['invoice_date'],
+                    'invoice_date_due' => $entry['invoice_date_due'] ?? null,
                     'payment_term' => $entry['payment_term'] ?? null,
                     'ref' => $entry['ref'] ?? null,
                     'journal_name' => $entry['journal_name'] ?? 'Invoice Other',
@@ -399,4 +400,59 @@ class InvoiceOtherController extends Controller
             'isHtml' => true,
         ]);
     }
+
+    /**
+     * Print kuitansi to PDF (half-letter)
+     */
+    public function kuitansiPdf(InvoiceOther $invoice)
+    {
+        $invoice->load('lines');
+        $invoices = collect([$invoice]);
+
+        try {
+            foreach ($invoices as $inv) {
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $inv->print_count = $log->print_count;
+            }
+        } catch (\Exception $e) {
+            foreach ($invoices as $inv) {
+                if (!isset($inv->print_count)) $inv->print_count = 0;
+            }
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('partials.kuitansi', [
+            'invoices' => $invoices,
+            'enableWatermark' => Setting::get('enable_pdf_watermark', '1'),
+        ])->setPaper([0, 0, 396, 612], 'landscape'); // half-letter landscape: 8.5in x 5.5in
+
+        $filename = 'kuitansi_' . str_replace('/', '_', $invoice->name) . '.pdf';
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Print kuitansi via browser (half-letter forced via CSS)
+     */
+    public function kuitansiHtml(InvoiceOther $invoice)
+    {
+        $invoice->load('lines');
+        $invoices = collect([$invoice]);
+
+        try {
+            foreach ($invoices as $inv) {
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $inv->print_count = $log->print_count;
+            }
+        } catch (\Exception $e) {
+            foreach ($invoices as $inv) {
+                if (!isset($inv->print_count)) $inv->print_count = 0;
+            }
+        }
+
+        return view('partials.kuitansi', [
+            'invoices' => $invoices,
+            'enableWatermark' => Setting::get('enable_pdf_watermark', '1'),
+            'isHtml' => true,
+        ]);
+    }
+
 }
