@@ -40,12 +40,21 @@ class PreferenceController extends Controller
             $agentId = $request->input("pq_{$type}_agent_id");
             $printer = $request->input("pq_{$type}_printer");
 
-            if ($queue) {
+            if ($queue || $agentId || $printer) {
+                // Initialize print_queues array if it doesn't exist
+                if (!isset($preferences['print_queues'])) {
+                    $preferences['print_queues'] = [];
+                }
+                
                 $preferences['print_queues'][$type] = array_filter([
-                    'queue'    => $queue,
+                    'queue'    => $queue ? $queue : null,
                     'agent_id' => $agentId ? (int) $agentId : null,
-                    'printer'  => $printer ?: null,
+                    'printer'  => $printer ? $printer : null,
                 ], fn($v) => $v !== null);
+            } else {
+                if (isset($preferences['print_queues'][$type])) {
+                    unset($preferences['print_queues'][$type]);
+                }
             }
         }
 

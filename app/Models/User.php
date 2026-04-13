@@ -64,6 +64,17 @@ class User extends Authenticatable
             default => 'User',
         };
     }
+
+    public function getRawPrintDestination(string $docType): array
+    {
+        $pref = $this->preferences['print_queues'][$docType] ?? [];
+        return [
+            'queue'    => $pref['queue']    ?? '',
+            'agent_id' => $pref['agent_id'] ?? '',
+            'printer'  => $pref['printer']  ?? '',
+        ];
+    }
+
     public function getPrintDestination(string $docType): array
     {
         $pref = $this->preferences['print_queues'][$docType] ?? [];

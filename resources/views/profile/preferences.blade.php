@@ -71,9 +71,9 @@
                 }'>
                     @foreach($docTypes as $key => $label)
                     @php
-                        $dest = $user->getPrintDestination($key);
+                        $dest = $user->getRawPrintDestination($key);
                     @endphp
-                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20" x-data="{ selectedAgent: '{{ $dest['agent_id'] ?? '' }}' }">
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20" x-data="{ selectedAgent: '{{ $dest['agent_id'] }}' }">
                         <div class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-3">{{ $label }}</div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="space-y-1">
@@ -99,7 +99,7 @@
                                 <select name="pq_{{ $key }}_printer" x-init="$watch('selectedAgent', () => $el.value = '')" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500">
                                     <option value="">-- Queue Default --</option>
                                     <template x-for="p in getPrintersForAgent(selectedAgent)" :key="p">
-                                        <option :value="p" x-text="p" :selected="p === '{{ $dest['printer'] ?? '' }}'"></option>
+                                        <option :value="p" x-text="p" :selected="p === '{{ $dest['printer'] }}'"></option>
                                     </template>
                                 </select>
                             </div>
