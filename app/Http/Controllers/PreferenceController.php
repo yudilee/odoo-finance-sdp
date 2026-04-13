@@ -14,7 +14,18 @@ class PreferenceController extends Controller
         $printersData = $service->getPrinters();
         $printers = $printersData['success'] ? $printersData['printers'] : [];
         
-        return view('profile.preferences', compact('user', 'printers'));
+        $queuesData = $service->getQueues();
+        $queues = $queuesData['success'] ? $queuesData['queues'] : [];
+
+        $agentsData = $service->getOnlineAgents();
+        $agents = $agentsData['success'] ? $agentsData['agents'] : [];
+        
+        $docTypes = [
+            'kuitansi' => 'Kuitansi',
+            'journal' => 'Journal Entry'
+        ];
+
+        return view('profile.preferences', compact('user', 'printers', 'queues', 'agents', 'docTypes'));
     }
 
     public function update(Request $request)
@@ -24,6 +35,20 @@ class PreferenceController extends Controller
         $preferences = $user->preferences ?? [];
         $preferences['default_printer'] = $request->default_printer;
         
+        foreach (['kuitansi', 'journal'] as $type) {
+            $queue = $request->input("pq_{$type}_queue");
+            $agentId = $request->input("pq_{$type}_agent_id");
+            $printer = $request->input("pq_{$type}_printer");
+
+            if ($queue) {
+                $preferences['print_queues'][$type] = array_filter([
+                    'queue'    => $queue,
+                    'agent_id' => $agentId ? (int) $agentId : null,
+                    'printer'  => $printer ?: null,
+                ], fn($v) => $v !== null);
+            }
+        }
+
         $user->preferences = $preferences;
         $user->save();
         

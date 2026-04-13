@@ -64,4 +64,25 @@ class User extends Authenticatable
             default => 'User',
         };
     }
+    public function getPrintDestination(string $docType): array
+    {
+        $pref = $this->preferences['print_queues'][$docType] ?? [];
+        return [
+            'queue'    => $pref['queue']    ?? \App\Models\Setting::get('print_hub_default_profile') ?? 'kuitansi',
+            'agent_id' => $pref['agent_id'] ?? null,
+            'printer'  => $pref['printer']  ?? null,
+        ];
+    }
+
+    public function setPrintDestination(string $docType, string $queue, ?int $agentId, ?string $printer): void
+    {
+        $prefs = $this->preferences ?? [];
+        $prefs['print_queues'][$docType] = array_filter([
+            'queue'    => $queue,
+            'agent_id' => $agentId,
+            'printer'  => $printer,
+        ], fn($v) => $v !== null && $v !== '');
+        $this->preferences = $prefs;
+        $this->save();
+    }
 }

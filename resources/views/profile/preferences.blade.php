@@ -53,6 +53,61 @@
                     </div>
                 </div>
             </div>
+            
+            {{-- Print Destinations --}}
+            <div class="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <h3 class="text-lg font-semibold">Print Destinations</h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Set which queue, agent and printer to use per document type. Leave agent/printer blank to use the queue's defaults.</p>
+                
+                <div class="space-y-6" x-data='{
+                    agents: @json($agents),
+                    getPrintersForAgent(agentId) {
+                        const agent = this.agents.find(a => a.id == agentId);
+                        return agent ? agent.printers : [];
+                    }
+                }'>
+                    @foreach($docTypes as $key => $label)
+                    @php
+                        $dest = $user->getPrintDestination($key);
+                    @endphp
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20" x-data="{ selectedAgent: '{{ $dest['agent_id'] ?? '' }}' }">
+                        <div class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-3">{{ $label }}</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Queue</label>
+                                <select name="pq_{{ $key }}_queue" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500">
+                                    <option value="">-- Global Default --</option>
+                                    @foreach($queues as $q)
+                                        <option value="{{ $q['name'] }}" {{ $dest['queue'] === $q['name'] ? 'selected' : '' }}>{{ $q['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Override Agent</label>
+                                <select name="pq_{{ $key }}_agent_id" x-model="selectedAgent" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500">
+                                    <option value="">-- Queue Default --</option>
+                                    @foreach($agents as $a)
+                                        <option value="{{ $a['id'] }}">{{ $a['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Override Printer</label>
+                                <select name="pq_{{ $key }}_printer" x-init="$watch('selectedAgent', () => $el.value = '')" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500">
+                                    <option value="">-- Queue Default --</option>
+                                    <template x-for="p in getPrintersForAgent(selectedAgent)" :key="p">
+                                        <option :value="p" x-text="p" :selected="p === '{{ $dest['printer'] ?? '' }}'"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
 
             <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">

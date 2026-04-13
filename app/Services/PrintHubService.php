@@ -212,4 +212,109 @@ class PrintHubService
             return ['success' => false, 'message' => 'Connection failed: ' . $e->getMessage()];
         }
     }
+
+    /**
+     * Print a PDF via a named queue, with optional agent+printer override.
+     */
+    public function printQueue(
+        string  $queue,
+        string  $pdfBase64,
+        ?int    $agentId  = null,
+        ?string $printer  = null,
+        array   $extra    = []
+    ): array {
+        if (empty($this->url)) {
+            return ['success' => false, 'message' => 'Print Hub URL not configured.'];
+        }
+
+        try {
+            $payload = array_merge([
+                'queue'           => $queue,
+                'document_base64' => $pdfBase64,
+                'type'            => 'pdf',
+            ], array_filter([
+                'agent_id' => $agentId,
+                'printer'  => $printer,
+            ], fn($v) => $v !== null), $extra);
+
+            $response = Http::withHeaders([
+                'X-Api-Key' => $this->apiKey,
+                'Accept' => 'application/json',
+            ])->timeout($this->timeout)->post("{$this->url}/api/v1/print", $payload);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'job_id' => $response->json('job_id'),
+                    'message' => 'Print job sent successfully via queue.'
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Hub Error: ' . ($response->json('error') ?? $response->status())
+            ];
+        } catch (\Exception $e) {
+            Log::error("PrintHub Error (printQueue): " . $e->getMessage());
+            return ['success' => false, 'message' => 'Printing failed: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get list of queues from the hub
+     */
+    public function getQueues(): array
+    {
+        if (empty($this->url)) {
+            return ['success' => false, 'queues' => []];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-Api-Key' => $this->apiKey,
+                'Accept' => 'application/json',
+            ])->timeout($this->timeout)->get("{$this->url}/api/v1/queues");
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'queues' => $response->json('queues', [])
+                ];
+            }
+
+            return ['success' => false, 'queues' => []];
+        } catch (\Exception $e) {
+            Log::error("PrintHub Error (getQueues): " . $e->getMessage());
+            return ['success' => false, 'queues' => []];
+        }
+    }
+
+    /**
+     * Get list of online agents from the hub
+     */
+    public function getOnlineAgents(): array
+    {
+        if (empty($this->url)) {
+            return ['success' => false, 'agents' => []];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-Api-Key' => $this->apiKey,
+                'Accept' => 'application/json',
+            ])->timeout($this->timeout)->get("{$this->url}/api/v1/agents/online");
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'agents' => $response->json('agents', [])
+                ];
+            }
+
+            return ['success' => false, 'agents' => []];
+        } catch (\Exception $e) {
+            Log::error("PrintHub Error (getOnlineAgents): " . $e->getMessage());
+            return ['success' => false, 'agents' => []];
+        }
+    }
 }

@@ -128,6 +128,9 @@ Route::middleware('auth')->group(function () {
     // Kuitansi Override Route (accessible by authenticated users printing Kuitansi)
     Route::post('/kuitansi-override', [PrintLogController::class, 'updateKuitansi'])->name('kuitansi.override.update');
 
+    // Print to Hub Route
+    Route::post('/kuitansi/print-hub', [App\Http\Controllers\KuitansiPrintController::class, 'printToHub'])->name('kuitansi.print-hub');
+
 
 
     // ──────────────────────────────────────────

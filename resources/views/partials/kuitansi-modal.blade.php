@@ -64,6 +64,37 @@
             this.saveStatus = 'error';
             setTimeout(() => { this.saveStatus = null; }, 3000);
         }
+    },
+    async printToHub() {
+        this.saveStatus = 'saving';
+        try {
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('invoice_name', '{{ $invoice->name }}');
+            formData.append('show_contract', this.showContract ? '1' : '0');
+            formData.append('use_override', this.useOverride ? '1' : '0');
+            
+            const response = await fetch('{{ route('kuitansi.print-hub') }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                this.saveStatus = 'success';
+                setTimeout(() => { this.saveStatus = null; }, 3000);
+            } else {
+                throw new Error(result.message || 'Failed to print');
+            }
+        } catch (error) {
+            console.error('Print Error:', error);
+            this.saveStatus = 'error';
+            setTimeout(() => { this.saveStatus = null; }, 3000);
+        }
     }
 }" 
 class="inline-flex items-center">
@@ -187,12 +218,12 @@ class="inline-flex items-center">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             Download PDF
                         </a>
-                        <a :href="'{{ route($htmlRoute, $invoice) }}' + (showContract ? '?show_contract=1' : '?show_contract=0') + (useOverride ? '&use_override=1' : '&use_override=0')" 
-                           target="_blank" 
+                        <button @click="printToHub()" 
+                           type="button" 
                            class="flex items-center gap-2 px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-all active:scale-95">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                            Print Browser
-                        </a>
+                            Print to Hub
+                        </button>
                     </div>
                     <button @click="kuitansiModalOpen = false" class="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Close</button>
                 </div>
