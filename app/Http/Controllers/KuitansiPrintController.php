@@ -34,8 +34,26 @@ class KuitansiPrintController extends Controller
 
         // Generate PDF
         $invoices = collect([$invoice]);
-        $pdf = Pdf::loadView('partials.kuitansi', compact('invoices', 'showContract', 'useOverride', 'request'))
-            ->setPaper([0, 0, 684.09, 396.00]); // 241.3mm x 139.7mm in points
+
+        try {
+            foreach ($invoices as $inv) {
+                $log = \App\Models\PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $inv->kuitansi_print_count = $log->kuitansi_print_count;
+                // Only inject the override data if the user checked the checkbox
+                $inv->kuitansi_pembayaran = $useOverride ? $log->kuitansi_pembayaran : null;
+                $log->increment('kuitansi_print_count');
+            }
+        } catch (\Exception $e) {
+            foreach ($invoices as $inv) {
+                if (!isset($inv->kuitansi_print_count)) $inv->kuitansi_print_count = 0;
+                $inv->kuitansi_pembayaran = null;
+            }
+        }
+
+        $enableWatermark = Setting::get('enable_pdf_watermark', '1');
+
+        $pdf = Pdf::loadView('partials.kuitansi', compact('invoices', 'showContract', 'useOverride', 'request', 'enableWatermark'))
+            ->setPaper([0, 0, 396, 684], 'landscape'); // custom size landscape: 9.5in x 5.5in
             
         $pdfBase64 = base64_encode($pdf->output());
 
