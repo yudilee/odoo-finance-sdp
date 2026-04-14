@@ -136,7 +136,20 @@
                             {{ $line->actual_start ? $line->actual_start->format('d/m/Y') : '-' }} - 
                             {{ $line->actual_end ? $line->actual_end->format('d/m/Y') : '-' }}
                         </td>
-                        <td class="px-4 py-3 text-center font-mono text-xs">{{ $line->quantity > 0 ? number_format($line->quantity, 0) : '-' }} {{ $line->uom }}</td>
+                        <td class="px-4 py-3 text-center font-mono text-xs">
+                            @php
+                                $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
+                                $uomMap = [
+                                    'hours' => 'Jam',
+                                    'days' => 'Hari',
+                                    'months' => 'Bulan',
+                                    'years' => 'Tahun',
+                                    'units' => 'Unit'
+                                ];
+                                $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;
+                            @endphp
+                            {{ $displayQty > 0 ? number_format($displayQty, 0) : '-' }} {{ $uomIndo }}
+                        </td>
                         <td class="px-4 py-3 text-right font-mono text-xs">{{ $line->price_unit != 0 ? 'Rp ' . number_format($line->price_unit, 0, ',', '.') : '-' }}</td>
                         <td class="px-4 py-3 text-right font-mono text-xs font-semibold">
                             @if($line->quantity != 0 && $line->price_unit != 0)

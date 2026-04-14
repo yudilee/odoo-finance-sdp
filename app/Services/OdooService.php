@@ -871,6 +871,8 @@ class OdooService
                 'rental_period_id/rental_order_id/rental_contract_id/name', // 25: Path B: Contract from Period
                 'invoice_date_due',                                       // 26: Due date
                 'partner_id/vat',                                         // 27: NPWP
+                'invoice_line_ids/rental_qty',                            // 28: Rental Qty
+                'invoice_line_ids/rental_uom',                            // 29: Rental UOM (from line directly)
             ];
 
             $entries = [];
@@ -922,8 +924,9 @@ class OdooService
                         $serialNum = $row[11] ?? '';
                         $actualStart = $row[12] ?? '';
                         $actualEnd = $row[13] ?? '';
-                        $uom = $row[14] ?? '';
+                        $uom = !empty($row[29]) ? $row[29] : ($row[14] ?? '');
                         $qty = (float)($row[15] ?? 0);
+                        $rentalQty = (float)($row[28] ?? 0);
                         $priceUnit = (float)($row[16] ?? 0);
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
 
@@ -943,6 +946,7 @@ class OdooService
                                 'actual_end' => $actualEnd,
                                 'uom' => $uom,
                                 'quantity' => $qty,
+                                'rental_qty' => $rentalQty,
                                 'price_unit' => $priceUnit,
                                 'customer_name' => $customerName,
                             ];

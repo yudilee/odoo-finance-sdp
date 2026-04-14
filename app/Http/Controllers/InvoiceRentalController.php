@@ -131,7 +131,8 @@ class InvoiceRentalController extends Controller
             }
 
             // Save to database
-            $savedCount = $this->saveInvoiceRentals($result['data']);
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceRentals($result['data']);
 
             ImportLog::create([
                 'source' => 'odoo_invoice_rental',
@@ -166,58 +167,7 @@ class InvoiceRentalController extends Controller
         }
     }
 
-    /**
-     * Save invoice rental entries to database (upsert by name)
-     */
-    protected function saveInvoiceRentals(array $entries): int
-    {
-        $count = 0;
 
-        foreach ($entries as $entry) {
-            $invoice = InvoiceRental::updateOrCreate(
-                ['name' => $entry['name']],
-                [
-                    'partner_name' => $entry['partner_name'],
-                    'invoice_date' => $entry['invoice_date'],
-                    'invoice_date_due' => $entry['invoice_date_due'] ?? null,
-                    'payment_term' => $entry['payment_term'] ?? null,
-                    'ref' => $entry['ref'] ?? null,
-                    'journal_name' => $entry['journal_name'] ?? 'Invoice Rental',
-                    'amount_untaxed' => $entry['amount_untaxed'],
-                    'amount_tax' => $entry['amount_tax'],
-                    'amount_total' => $entry['amount_total'],
-                    'partner_bank' => $entry['partner_bank'] ?? null,
-                    'bc_manager' => $entry['manager_name'] ?? null,
-                    'bc_spv' => $entry['spv_name'] ?? null,
-                    'partner_address' => $entry['partner_address'] ?? null,
-                    'partner_address_complete' => $entry['partner_address_complete'] ?? null,
-                    'narration' => $entry['narration'] ?? null,
-                    'partner_npwp' => $entry['partner_npwp'] ?? null,
-                ]
-            );
-
-            // Delete existing lines and re-insert
-            $invoice->lines()->delete();
-
-            foreach ($entry['lines'] as $line) {
-                $invoice->lines()->create([
-                    'sale_order_id' => $line['sale_order_id'],
-                    'description' => $line['description'],
-                    'serial_number' => $line['serial_number'],
-                    'actual_start' => $line['actual_start'] ?: null,
-                    'actual_end' => $line['actual_end'] ?: null,
-                    'uom' => $line['uom'],
-                    'quantity' => $line['quantity'],
-                    'price_unit' => $line['price_unit'],
-                    'customer_name' => $line['customer_name']
-                ]);
-            }
-
-            $count++;
-        }
-
-        return $count;
-    }
 
     /**
      * Show a single invoice rental entry

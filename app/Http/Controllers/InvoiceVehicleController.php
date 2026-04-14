@@ -136,7 +136,8 @@ class InvoiceVehicleController extends Controller
             }
 
             // Save to database
-            $savedCount = $this->saveInvoiceVehicles($result['data']);
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceVehicles($result['data']);
 
             ImportLog::create([
                 'source' => 'odoo_invoice_vehicle',
@@ -171,55 +172,7 @@ class InvoiceVehicleController extends Controller
         }
     }
 
-    /**
-     * Save invoice vehicle entries to database (upsert by name)
-     */
-    protected function saveInvoiceVehicles(array $entries): int
-    {
-        $count = 0;
 
-        foreach ($entries as $entry) {
-            $invoice = InvoiceVehicle::updateOrCreate(
-                ['name' => $entry['name']],
-                [
-                    'partner_name' => $entry['partner_name'],
-                    'invoice_date' => $entry['invoice_date'],
-                    'invoice_date_due' => $entry['invoice_date_due'] ?? null,
-                    'payment_term' => $entry['payment_term'] ?? null,
-                    'ref' => $entry['ref'] ?? null,
-                    'journal_name' => $entry['journal_name'] ?? 'Invoice Penjualan Kendaraan',
-                    'amount_untaxed' => $entry['amount_untaxed'],
-                    'amount_tax' => $entry['amount_tax'],
-                    'amount_total' => $entry['amount_total'],
-                    'partner_bank' => $entry['partner_bank'] ?? null,
-                    'manager_name' => $entry['manager_name'] ?? null,
-                    'spv_name' => $entry['spv_name'] ?? null,
-                    'partner_address' => $entry['partner_address'] ?? null,
-                    'partner_address_complete' => $entry['partner_address_complete'] ?? null,
-                    'partner_npwp' => $entry['partner_npwp'] ?? null,
-                    'narration' => $entry['narration'] ?? null,
-                ]
-            );
-
-            // Delete existing lines and re-insert
-            $invoice->lines()->delete();
-
-            foreach ($entry['lines'] as $line) {
-                $invoice->lines()->create([
-                    'description' => $line['description'],
-                    'serial_number' => $line['serial_number'] ?? null,
-                    'license_plate' => $line['license_plate'] ?? null,
-                    'product_name' => $line['product_name'] ?? null,
-                    'quantity' => $line['quantity'],
-                    'price_unit' => $line['price_unit'],
-                ]);
-            }
-
-            $count++;
-        }
-
-        return $count;
-    }
 
     /**
      * Show a single invoice vehicle entry

@@ -172,11 +172,16 @@ class SyncService
             $invoice->lines()->delete();
             foreach ($entry['lines'] as $line) {
                 $invoice->lines()->create([
-                    'sale_order_name' => $line['sale_order_name'] ?? null,
+                    'sale_order_id' => $line['sale_order_id'] ?? null,
                     'description' => $line['description'],
                     'serial_number' => $line['serial_number'] ?? null,
+                    'actual_start' => $line['actual_start'] ?? null,
+                    'actual_end' => $line['actual_end'] ?? null,
+                    'uom' => $line['uom'] ?? null,
                     'quantity' => $line['quantity'],
+                    'rental_qty' => $line['rental_qty'] ?? null,
                     'price_unit' => $line['price_unit'],
+                    'customer_name' => $line['customer_name'] ?? null,
                 ]);
             }
             $count++;

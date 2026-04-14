@@ -16,6 +16,7 @@ class InvoiceRentalLine extends Model
         'actual_end',
         'uom',
         'quantity',
+        'rental_qty',
         'price_unit',
         'customer_name'
     ];
@@ -24,6 +25,7 @@ class InvoiceRentalLine extends Model
         'actual_start' => 'date',
         'actual_end' => 'date',
         'quantity' => 'decimal:2',
+        'rental_qty' => 'decimal:2',
         'price_unit' => 'decimal:2',
     ];
 

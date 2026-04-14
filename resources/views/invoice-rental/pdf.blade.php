@@ -491,8 +491,20 @@
                     @endif
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if($line->quantity != 0)
-                                {{ number_format($line->quantity, 0) }} {{ $line->uom ?? 'Unit' }}
+                            @php
+                                $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
+                                $uomMap = [
+                                    'hours' => 'Jam',
+                                    'days' => 'Hari',
+                                    'months' => 'Bulan',
+                                    'years' => 'Tahun',
+                                    'units' => 'Unit'
+                                ];
+                                $uomStr = $line->uom ?? 'Unit';
+                                $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
+                            @endphp
+                            @if($displayQty != 0)
+                                {{ number_format($displayQty, 0) }} {{ $uomIndo }}
                             @endif
                         @endif
                     </td>
