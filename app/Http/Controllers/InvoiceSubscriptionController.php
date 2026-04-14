@@ -81,7 +81,7 @@ class InvoiceSubscriptionController extends Controller
         $sort = $request->input('sort', 'invoice_date');
         $dir  = $request->input('dir', 'asc');
 
-        $query = InvoiceSubscription::query();
+        $query = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
 
         // ── Search ──
         if ($request->filled('search')) {
@@ -133,7 +133,7 @@ class InvoiceSubscriptionController extends Controller
         $records = $query->paginate($perPage)->withQueryString();
 
         // ── Stats (over the whole window, no status/search filters) ──
-        $statsBase = InvoiceSubscription::query();
+        $statsBase = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
         if ($request->filled('search')) $statsBase->search($request->search);
         if ($request->filled('date_from')) $statsBase->where('invoice_date', '>=', $request->date_from);
         if ($request->filled('date_to'))   $statsBase->where('invoice_date', '<=', $request->date_to);
@@ -296,7 +296,7 @@ class InvoiceSubscriptionController extends Controller
             ? json_decode($visibleColumnsInput, true) 
             : $visibleColumnsInput;
 
-        $query = InvoiceSubscription::query();
+        $query = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
         
         if (!empty($ids)) {
             $query->whereIn('id', $ids);
