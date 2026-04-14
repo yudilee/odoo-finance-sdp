@@ -78,8 +78,14 @@ class User extends Authenticatable
     public function getPrintDestination(string $docType): array
     {
         $pref = $this->preferences['print_queues'][$docType] ?? [];
+        
+        $defaultQueue = \App\Models\Setting::get('print_hub_default_profile') ?? 'kuitansi';
+        if (str_starts_with($docType, 'invoice')) {
+            $defaultQueue = 'invoice';
+        }
+        
         return [
-            'queue'    => $pref['queue']    ?? \App\Models\Setting::get('print_hub_default_profile') ?? 'kuitansi',
+            'queue'    => $pref['queue']    ?? $defaultQueue,
             'agent_id' => $pref['agent_id'] ?? null,
             'printer'  => $pref['printer']  ?? null,
         ];
