@@ -21,8 +21,12 @@ class PreferenceController extends Controller
         $agents = $agentsData['success'] ? $agentsData['agents'] : [];
         
         $docTypes = [
-            'kuitansi' => 'Kuitansi',
-            'journal' => 'Journal Entry'
+            'kuitansi'        => 'Kuitansi',
+            'journal'         => 'Journal Entry',
+            'invoice_driver'  => 'Invoice Driver',
+            'invoice_other'   => 'Invoice Other (INVOT/INVOW)',
+            'invoice_rental'  => 'Invoice Rental (INVRC/INVRS)',
+            'invoice_vehicle' => 'Invoice Jual Kendaraan',
         ];
 
         return view('profile.preferences', compact('user', 'printers', 'queues', 'agents', 'docTypes'));
@@ -35,7 +39,7 @@ class PreferenceController extends Controller
         $preferences = $user->preferences ?? [];
         $preferences['default_printer'] = $request->default_printer;
         
-        foreach (['kuitansi', 'journal'] as $type) {
+        foreach (['kuitansi', 'journal', 'invoice_driver', 'invoice_other', 'invoice_rental', 'invoice_vehicle'] as $type) {
             $queue = $request->input("pq_{$type}_queue");
             $agentId = $request->input("pq_{$type}_agent_id");
             $printer = $request->input("pq_{$type}_printer");

@@ -175,9 +175,9 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         Sync Odoo
                     </button>
-                    <button type="submit" form="bulkPrintForm" data-print-type="html" class="printSelectedBtn px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled>
+                    <button type="button" class="printSelectedHubBtn px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled data-doc-type="invoice_rental">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                        <span>Print Browser (<span class="selectedCount">0</span>)</span>
+                        <span>Print to Hub (<span class="selectedCount">0</span>)</span>
                     </button>
                     <button type="submit" form="bulkPrintForm" data-print-type="pdf" class="printSelectedBtn px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1 opacity-50 cursor-not-allowed" disabled>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -321,7 +321,7 @@
                         <td x-show="columns.name.visible" class="px-3 py-2 font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             <div class="flex items-center gap-2">
                                 <a href="{{ route('invoice-rental.show', $invoice) }}" class="hover:underline">{{ $invoice->name }}</a>
-                                <button type="button" onclick="printInvoice('{{ $invoice->name }}', '{{ route('invoice-rental.print-html', $invoice) }}')" title="Print Browser" class="text-slate-400 hover:text-emerald-600 transition-colors">
+                                <button type="button" onclick="printRentalInvoiceToHub('{{ $invoice->name }}', 'invoice_rental')" title="Print to Hub" class="text-slate-400 hover:text-emerald-600 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
                                 <button type="button" onclick="printInvoice('{{ $invoice->name }}', '{{ route('invoice-rental.print', $invoice) }}')" title="Print PDF" class="text-slate-400 hover:text-indigo-600 transition-colors">
@@ -525,9 +525,19 @@
                 btn.classList.toggle('opacity-50', checkedCount === 0);
                 btn.classList.toggle('cursor-not-allowed', checkedCount === 0);
             });
+            hubBtns.forEach(btn => {
+                btn.disabled = checkedCount === 0;
+                btn.classList.toggle('opacity-50', checkedCount === 0);
+                btn.classList.toggle('cursor-not-allowed', checkedCount === 0);
+            });
         }
 
         const printBtns = document.querySelectorAll('.printSelectedBtn');
+        const hubBtns   = document.querySelectorAll('.printSelectedHubBtn');
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.entry-checkbox:checked')).map(cb => cb.value);
+        }
 
         if (selectAll && checkboxes.length > 0) {
             selectAll.addEventListener('change', function() {
@@ -539,6 +549,42 @@
             });
             updateSelection();
         }
+
+        // Hub bulk button — shows SweetAlert for INVRS, otherwise sends directly
+        hubBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const ids = getSelectedIds();
+                if (ids.length === 0) return;
+
+                const hasInvrs = Array.from(document.querySelectorAll('.entry-checkbox:checked')).some(cb => {
+                    const row = cb.closest('tr');
+                    const nameCell = row.querySelector('td:nth-child(2)');
+                    return nameCell && nameCell.textContent.trim().startsWith('INVRS');
+                });
+
+                if (hasInvrs) {
+                    Swal.fire({
+                        title: 'Pilih Jenis Cetakan (Bulk)',
+                        html: getPrintOptionsHtml('Pilih Jenis Cetakan (Bulk)', true),
+                        showCancelButton: true,
+                        confirmButtonText: 'Print to Hub',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true,
+                        confirmButtonColor: '#10b981',
+                        didOpen: () => initSwalEvents(),
+                        preConfirm: () => window.swalSelectedValue
+                    }).then(result => {
+                        if (!result.isConfirmed) return;
+                        const val = result.value;
+                        const printMode    = val === 'summary' ? 'summary' : 'detail';
+                        const showUsername = val === 'detail_username' ? 1 : 0;
+                        printBulkToHub('invoice_rental', ids, printMode, showUsername);
+                    });
+                } else {
+                    printBulkToHub('invoice_rental', ids);
+                }
+            });
+        });
 
         const bulkForm = document.getElementById('bulkPrintForm');
         if (bulkForm) {
@@ -589,4 +635,5 @@
         }
     });
 </script>
+@include('partials.invoice-print-hub')
 @endsection

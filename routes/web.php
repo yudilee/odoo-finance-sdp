@@ -128,8 +128,12 @@ Route::middleware('auth')->group(function () {
     // Kuitansi Override Route (accessible by authenticated users printing Kuitansi)
     Route::post('/kuitansi-override', [PrintLogController::class, 'updateKuitansi'])->name('kuitansi.override.update');
 
-    // Print to Hub Route
+    // Print to Hub Route (Kuitansi)
     Route::post('/kuitansi/print-hub', [App\Http\Controllers\KuitansiPrintController::class, 'printToHub'])->name('kuitansi.print-hub');
+
+    // Print to Hub Routes (Invoices: Driver, Other, Rental, Vehicle)
+    Route::post('/invoice/print-hub',      [App\Http\Controllers\InvoicePrintController::class, 'printSingleToHub'])->name('invoice.print-hub');
+    Route::post('/invoice/print-hub-bulk', [App\Http\Controllers\InvoicePrintController::class, 'printBulkToHub'])->name('invoice.print-hub-bulk');
 
 
 
