@@ -524,35 +524,39 @@
                     @endif
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @php
-                                $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
-                                $uomMap = [
-                                    'hour' => 'Jam',
-                                    'hours' => 'Jam',
-                                    'day' => 'Hari',
-                                    'days' => 'Hari',
-                                    'month' => 'Bln',
-                                    'months' => 'Bln',
-                                    'year' => 'Tahun',
-                                    'years' => 'Tahun',
-                                    'unit' => 'Unit',
-                                    'units' => 'Unit'
-                                ];
-                                $uomStr = $line->uom ?? 'Unit';
-                                $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
-                            @endphp
-                            @if($displayQty != 0)
-                                {{ number_format($displayQty, 0) }} {{ $uomIndo }}
+                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain')
+                                @php
+                                    $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
+                                    $uomMap = [
+                                        'hour' => 'Jam',
+                                        'hours' => 'Jam',
+                                        'day' => 'Hari',
+                                        'days' => 'Hari',
+                                        'month' => 'Bln',
+                                        'months' => 'Bln',
+                                        'year' => 'Tahun',
+                                        'years' => 'Tahun',
+                                        'unit' => 'Unit',
+                                        'units' => 'Unit'
+                                    ];
+                                    $uomStr = $line->uom ?? 'Unit';
+                                    $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
+                                @endphp
+                                @if($displayQty != 0)
+                                    {{ number_format($displayQty, 0) }} {{ $uomIndo }}
+                                @endif
                             @endif
                         @endif
                     </td>
                     <td class="text-right">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @php
-                                $unitPrice = ($line->duration_price > 0) ? $line->duration_price : $line->price_unit;
-                            @endphp
-                            @if(isset($unitPrice) && $unitPrice != 0)
-                                {{ number_format($unitPrice, 0, ',', '.') }}
+                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain')
+                                @php
+                                    $unitPrice = ($line->duration_price > 0) ? $line->duration_price : $line->price_unit;
+                                @endphp
+                                @if(isset($unitPrice) && $unitPrice != 0)
+                                    {{ number_format($unitPrice, 0, ',', '.') }}
+                                @endif
                             @endif
                         @endif
                     </td>
@@ -656,7 +660,7 @@
                         @if(isset($noteLines) && $noteLines->isNotEmpty())
                             @if(!empty($invoice->narration) || (isset($pphLines) && $pphLines->isNotEmpty()))<br/>@endif
                             @foreach($noteLines as $noteL)
-                                {{ $noteL->clean_description }}<br/>
+                                {!! nl2br(e($noteL->clean_description)) !!}<br/>
                             @endforeach
                         @endif
                     </div>

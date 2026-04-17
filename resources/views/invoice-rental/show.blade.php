@@ -146,25 +146,29 @@
                             {{ $line->actual_end ? $line->actual_end->format('d/m/Y') : '-' }}
                         </td>
                         <td class="px-4 py-3 text-center font-mono text-xs">
-                            @php
-                                $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
-                                $uomMap = [
-                                    'hour' => 'Jam',
-                                    'hours' => 'Jam',
-                                    'day' => 'Hari',
-                                    'days' => 'Hari',
-                                    'month' => 'Bln',
-                                    'months' => 'Bln',
-                                    'year' => 'Tahun',
-                                    'years' => 'Tahun',
-                                    'unit' => 'Unit',
-                                    'units' => 'Unit'
-                                ];
-                                $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;
-                            @endphp
-                            {{ $displayQty > 0 ? number_format($displayQty, 0) : '-' }} {{ $uomIndo }}
+                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain')
+                                @php
+                                    $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
+                                    $uomMap = [
+                                        'hour' => 'Jam',
+                                        'hours' => 'Jam',
+                                        'day' => 'Hari',
+                                        'days' => 'Hari',
+                                        'month' => 'Bln',
+                                        'months' => 'Bln',
+                                        'year' => 'Tahun',
+                                        'years' => 'Tahun',
+                                        'unit' => 'Unit',
+                                        'units' => 'Unit'
+                                    ];
+                                    $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;
+                                @endphp
+                                {{ $displayQty > 0 ? number_format($displayQty, 0) : '-' }} {{ $uomIndo }}
+                            @else
+                                -
+                            @endif
                         </td>
-                        <td class="px-4 py-3 text-right font-mono text-xs">{{ $line->price_unit != 0 ? 'Rp ' . number_format($line->price_unit, 0, ',', '.') : '-' }}</td>
+                        <td class="px-4 py-3 text-right font-mono text-xs">{{ (strtolower(trim($line->clean_description)) !== 'lain-lain' && $line->price_unit != 0) ? 'Rp ' . number_format($line->price_unit, 0, ',', '.') : '-' }}</td>
                         <td class="px-4 py-3 text-right font-mono text-xs font-semibold">
                             @if($line->quantity != 0 && $line->price_unit != 0)
                                 Rp&nbsp;{{ number_format($line->quantity * $line->price_unit, 0, ',', '.') }}
@@ -198,7 +202,7 @@
             @if($noteLines->isNotEmpty())
                 @if(!empty($invoice->narration) || $pphLines->isNotEmpty())<br/>@endif
                 @foreach($noteLines as $noteL)
-                    {{ $noteL->clean_description }}<br/>
+                    {!! nl2br(e($noteL->clean_description)) !!}<br/>
                 @endforeach
             @endif
         </div>
