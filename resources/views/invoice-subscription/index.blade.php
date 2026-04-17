@@ -626,7 +626,7 @@
                                     @elseif($col['id'] === 'period_type')
                                         {{ $rec->period_type }}
                                     @elseif($col['id'] === 'product_name')
-                                        <div class="truncate max-w-[200px]" title="{{ $rec->product_name }}">{{ $rec->product_name }}</div>
+                                        <div class="truncate max-w-[200px]" title="{{ $rec->clean_product_name }}">{{ $rec->clean_product_name }}</div>
                                     @elseif($col['id'] === 'period_start')
                                         <div class="text-slate-500 whitespace-nowrap">
                                             {{ $rec->period_start ? $rec->period_start->format('Y-m-d') : '-' }} to {{ $rec->period_end ? $rec->period_end->format('Y-m-d') : '-' }}

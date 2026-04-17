@@ -103,4 +103,20 @@ class InvoiceSubscription extends Model
                   ->orWhere('product_name', 'like', "%{$term}%");
         });
     }
+
+    /**
+     * Get product_name without brackets [ ]
+     */
+    public function getCleanProductNameAttribute(): string
+    {
+        return str_replace(['[', ']'], '', $this->product_name ?? '');
+    }
+
+    /**
+     * Get so_name without brackets [ ]
+     */
+    public function getCleanSoNameAttribute(): string
+    {
+        return str_replace(['[', ']'], '', $this->so_name ?? '');
+    }
 }

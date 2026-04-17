@@ -129,8 +129,8 @@
             $descSummary = implode("\n", $descArr);
         } else {
             $lines     = $invoice->lines ?? collect();
-            $descLines = $lines->filter(fn($l) => !empty($l->description) && ($l->quantity ?? 0) > 0);
-            $descArr   = $descLines->take(3)->pluck('description')->toArray();
+            $descLines = $lines->filter(fn($l) => !empty($l->clean_description) && ($l->quantity ?? 0) > 0);
+            $descArr   = $descLines->take(3)->pluck('clean_description')->toArray();
             if ($descLines->count() > 3) {
                 $descArr[] = '...dan ' . ($descLines->count() - 3) . ' item lainnya';
             }

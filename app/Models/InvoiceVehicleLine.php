@@ -27,4 +27,12 @@ class InvoiceVehicleLine extends Model
     {
         return $this->belongsTo(InvoiceVehicle::class, 'invoice_vehicle_id');
     }
+
+    /**
+     * Get description without brackets [ ]
+     */
+    public function getCleanDescriptionAttribute(): string
+    {
+        return str_replace(['[', ']'], '', $this->description ?? '');
+    }
 }

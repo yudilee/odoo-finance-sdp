@@ -24,4 +24,12 @@ class InvoiceDriverLine extends Model
     {
         return $this->belongsTo(InvoiceDriver::class);
     }
+
+    /**
+     * Get description without brackets [ ]
+     */
+    public function getCleanDescriptionAttribute(): string
+    {
+        return str_replace(['[', ']'], '', $this->description ?? '');
+    }
 }

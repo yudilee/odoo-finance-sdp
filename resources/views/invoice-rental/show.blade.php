@@ -130,7 +130,7 @@
                     <tr class="border-t border-slate-100 dark:border-slate-800 {{ $idx % 2 === 0 ? '' : 'bg-slate-50/50 dark:bg-slate-900/30' }}">
                         <td class="px-4 py-3 text-xs text-slate-400">{{ $idx + 1 }}</td>
                         <td class="px-4 py-3 text-sm">{{ $line->sale_order_id ?? '-' }}<br/><span class="text-xs text-slate-400">{{ $line->customer_name }}</span></td>
-                        <td class="px-4 py-3 text-sm">{{ $line->description }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $line->clean_description }}</td>
                         <td class="px-4 py-3 text-sm">{{ $line->serial_number ?? '-' }}</td>
                         <td class="px-4 py-3 text-xs text-slate-500">
                             {{ $line->actual_start ? $line->actual_start->format('d/m/Y') : '-' }} - 

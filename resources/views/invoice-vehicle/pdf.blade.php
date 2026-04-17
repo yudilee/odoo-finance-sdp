@@ -367,9 +367,9 @@
                     <td class="text-center">{{ $idx + 1 }}</td>
                     <td>
                         @php
-                            $description = $line->description;
-                            // Prepend "Penjualan Kendaraan" and remove brackets [ ]
-                            $formattedDescription = 'Penjualan Kendaraan ' . str_replace(['[', ']'], '', $description);
+                            $description = $line->clean_description;
+                            // Prepend "Penjualan Kendaraan"
+                            $formattedDescription = 'Penjualan Kendaraan ' . $description;
                         @endphp
                         {{ $formattedDescription }}
                     </td>

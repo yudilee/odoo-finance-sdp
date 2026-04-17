@@ -35,4 +35,12 @@ class InvoiceRentalLine extends Model
     {
         return $this->belongsTo(InvoiceRental::class);
     }
+
+    /**
+     * Get description without brackets [ ]
+     */
+    public function getCleanDescriptionAttribute(): string
+    {
+        return str_replace(['[', ']'], '', $this->description ?? '');
+    }
 }

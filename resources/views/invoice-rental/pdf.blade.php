@@ -458,28 +458,32 @@
                     @else
                         <td class="text-center">{{ $idx + 1 }}</td>
                         <td>
+                            @php
+                                // Extract product code from description (text inside first [...])
+                                preg_match('/\[([^\]]+)\]/', $line->description ?? '', $codeMatch);
+                                $productCode = $codeMatch[1] ?? null;
+
+                                // Always look up billing period from InvoiceSubscription
+                                $periodeStart = $line->actual_start;
+                                $periodeEnd   = $line->actual_end;
+                                $subscription = \App\Models\InvoiceSubscription::where('invoice_name', $invoice->name)
+                                    ->where('so_name', $line->sale_order_id)
+                                    ->first();
+                                if ($subscription && $subscription->period_start && $subscription->period_end) {
+                                    $periodeStart = $subscription->period_start;
+                                    $periodeEnd   = $subscription->period_end;
+                                }
+                            @endphp
                             @if(isset($showUsername) && $showUsername)
-                                <strong>No. Polisi/Serial: {{ $line->serial_number ?? '-' }}</strong>
+                                {{-- Code - Serial on first line, description on second --}}
+                                <strong>No. Polisi/Serial: {{ $productCode ? $productCode . ' - ' : '' }}{{ $line->serial_number ?? '-' }}</strong>
                             @else
-                                <strong>{!! nl2br(e($line->description)) !!}</strong>
                                 @if($line->serial_number)
-                                    <br/><span style="color: #475569;">No. Polisi/Serial: {{ $line->serial_number }}</span>
+                                    <strong>No. Polisi/Serial: {{ $line->serial_number }}</strong><br/>
                                 @endif
+                                <span>{!! nl2br(e($line->clean_description)) !!}</span>
                             @endif
                             @if(!$line->is_summary)
-                                @php
-                                    $periodeStart = $line->actual_start;
-                                    $periodeEnd = $line->actual_end;
-                                    if (isset($showUsername) && $showUsername) {
-                                        $subscription = \App\Models\InvoiceSubscription::where('invoice_name', $invoice->name)
-                                            ->where('so_name', $line->sale_order_id)
-                                            ->first();
-                                        if ($subscription && $subscription->period_start && $subscription->period_end) {
-                                            $periodeStart = $subscription->period_start;
-                                            $periodeEnd = $subscription->period_end;
-                                        }
-                                    }
-                                @endphp
                                 @if($periodeStart || $periodeEnd)
                                     <br/><span style="color: #475569;">Periode: {{ $periodeStart ? $periodeStart->format('d/m/Y') : '-' }} s/d {{ $periodeEnd ? $periodeEnd->format('d/m/Y') : '-' }}</span>
                                 @endif

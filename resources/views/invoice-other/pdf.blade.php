@@ -366,7 +366,7 @@
                 @foreach($regularLines as $idx => $line)
                 <tr>
                     <td class="text-center">{{ $idx + 1 }}</td>
-                    <td>{{ $line->description }}</td>
+                    <td>{{ $line->clean_description }}</td>
                     @if($showUnitColumn)
                     <td class="text-center">
                         @if($line->quantity != 0)
