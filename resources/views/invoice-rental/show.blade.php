@@ -140,10 +140,15 @@
                             @php
                                 $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
                                 $uomMap = [
+                                    'hour' => 'Jam',
                                     'hours' => 'Jam',
+                                    'day' => 'Hari',
                                     'days' => 'Hari',
+                                    'month' => 'Bulan',
                                     'months' => 'Bulan',
+                                    'year' => 'Tahun',
                                     'years' => 'Tahun',
+                                    'unit' => 'Unit',
                                     'units' => 'Unit'
                                 ];
                                 $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;

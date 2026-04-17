@@ -660,7 +660,23 @@
                                     @elseif($col['id'] === 'invoice_amount')
                                         {{ number_format($rec->invoice_amount, 2) }}
                                     @elseif($col['id'] === 'rental_uom')
-                                        {{ $rec->rental_uom ?: '-' }}
+                                        @php
+                                            $uomMap = [
+                                                'hour' => 'Jam',
+                                                'hours' => 'Jam',
+                                                'day' => 'Hari',
+                                                'days' => 'Hari',
+                                                'month' => 'Bulan',
+                                                'months' => 'Bulan',
+                                                'year' => 'Tahun',
+                                                'years' => 'Tahun',
+                                                'unit' => 'Unit',
+                                                'units' => 'Unit'
+                                            ];
+                                            $uomStr = strtolower(trim($rec->rental_uom ?? ''));
+                                            $uomIndo = $uomMap[$uomStr] ?? ($rec->rental_uom ?: '-');
+                                        @endphp
+                                        {{ $uomIndo }}
                                     @elseif($col['id'] === 'status')
                                         <div class="whitespace-nowrap">
                                             {!! $statusBadge !!}
