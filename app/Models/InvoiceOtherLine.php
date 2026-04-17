@@ -11,11 +11,13 @@ class InvoiceOtherLine extends Model
         'description',
         'quantity',
         'price_unit',
+        'duration_price',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:2',
         'price_unit' => 'decimal:2',
+        'duration_price' => 'decimal:2',
     ];
 
     public function invoice()

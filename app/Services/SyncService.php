@@ -37,6 +37,7 @@ class SyncService
                     'partner_address' => $entry['partner_address'] ?? null,
                     'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                     'narration' => $entry['narration'] ?? null,
+                    'partner_npwp' => $entry['partner_npwp'] ?? null,
                 ]
             );
 
@@ -46,6 +47,7 @@ class SyncService
                     'description' => $line['description'],
                     'quantity' => $line['quantity'],
                     'price_unit' => $line['price_unit'],
+                    'duration_price' => $line['duration_price'] ?? 0,
                 ]);
             }
             $count++;
@@ -88,6 +90,7 @@ class SyncService
                     'description' => $line['description'],
                     'quantity' => $line['quantity'],
                     'price_unit' => $line['price_unit'],
+                    'duration_price' => $line['duration_price'] ?? 0,
                 ]);
             }
             $count++;
@@ -133,6 +136,7 @@ class SyncService
                     'product_name' => $line['product_name'] ?? null,
                     'license_plate' => $line['license_plate'] ?? null,
                     'serial_number' => $line['serial_number'] ?? null,
+                    'duration_price' => $line['duration_price'] ?? 0,
                 ]);
             }
             $count++;
@@ -181,6 +185,7 @@ class SyncService
                     'quantity' => $line['quantity'],
                     'rental_qty' => $line['rental_qty'] ?? null,
                     'price_unit' => $line['price_unit'],
+                    'duration_price' => $line['duration_price'] ?? 0,
                     'customer_name' => $line['customer_name'] ?? null,
                 ]);
             }
@@ -223,11 +228,15 @@ class SyncService
                 'period_start'        => $entry['period_start'] ?: null,
                 'period_end'          => $entry['period_end'] ?: null,
                 'price_unit'          => $entry['price_unit'] ?? 0,
+                'duration_price'      => $entry['duration_price'] ?? 0,
                 'invoice_amount'      => $entry['invoice_amount'] ?? 0,
                 'rental_uom'          => $entry['rental_uom'] ?? null,
                 'invoice_name'        => $entry['invoice_name'] ?: null,
                 'invoice_ref'         => $entry['invoice_ref'] ?: null,
                 'invoice_state'       => $entry['invoice_state'] ?: null,
+                'partner_npwp'        => $entry['partner_npwp'] ?? null,
+                'partner_address'     => $entry['partner_address'] ?? null,
+                'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                 'payment_state'       => $entry['payment_state'] ?: null,
                 'synced_at'           => $syncedAt,
             ];

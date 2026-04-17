@@ -22,12 +22,16 @@ class InvoiceSubscription extends Model
         'period_end',
         'invoice_date',
         'price_unit',
+        'duration_price',
         'rental_uom',
         'invoice_name',
         'invoice_ref',
         'invoice_state',
         'payment_state',
         'invoice_amount',
+        'partner_npwp',
+        'partner_address',
+        'partner_address_complete',
         'synced_at',
     ];
 
@@ -38,6 +42,7 @@ class InvoiceSubscription extends Model
         'period_end'          => 'date',
         'invoice_date'        => 'date',
         'price_unit'          => 'decimal:2',
+        'duration_price'      => 'decimal:2',
         'invoice_amount'      => 'decimal:2',
         'synced_at'           => 'datetime',
     ];

@@ -510,8 +510,11 @@
                     </td>
                     <td class="text-right">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if(isset($line->price_unit) && $line->price_unit != 0)
-                                {{ number_format($line->price_unit, 0, ',', '.') }}
+                            @php
+                                $unitPrice = ($line->duration_price > 0) ? $line->duration_price : $line->price_unit;
+                            @endphp
+                            @if(isset($unitPrice) && $unitPrice != 0)
+                                {{ number_format($unitPrice, 0, ',', '.') }}
                             @endif
                         @endif
                     </td>

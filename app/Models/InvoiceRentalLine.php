@@ -18,6 +18,7 @@ class InvoiceRentalLine extends Model
         'quantity',
         'rental_qty',
         'price_unit',
+        'duration_price',
         'customer_name'
     ];
 
@@ -27,6 +28,7 @@ class InvoiceRentalLine extends Model
         'quantity' => 'decimal:2',
         'rental_qty' => 'decimal:2',
         'price_unit' => 'decimal:2',
+        'duration_price' => 'decimal:2',
     ];
 
     public function invoiceRental(): BelongsTo

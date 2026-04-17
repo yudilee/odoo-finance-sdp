@@ -344,6 +344,7 @@ class OdooService
                 'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
                 'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
                 'invoice_date_due',                      // 22: Due date
+                'invoice_line_ids/duration_price',       // 23: Duration Price
             ];
 
             $entries = [];
@@ -409,6 +410,7 @@ class OdooService
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
                                 'price_unit' => $linePrice,
+                                'duration_price' => (float)($row[23] ?? 0),
                             ];
                         }
                     }
@@ -475,6 +477,7 @@ class OdooService
                 'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
                 'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
                 'invoice_date_due',                      // 22: Due date
+                'invoice_line_ids/duration_price',       // 23: Duration Price
             ];
 
             $entries = [];
@@ -537,6 +540,7 @@ class OdooService
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
                                 'price_unit' => $linePrice,
+                                'duration_price' => (float)($row[23] ?? 0),
                             ];
                         }
                     }
@@ -603,6 +607,7 @@ class OdooService
                 'invoice_line_ids/sale_order_id/rental_contract_id/name', // 22: Path A: Contract from Line
                 'rental_period_id/rental_order_id/rental_contract_id/name', // 23: Path B: Contract from Period
                 'invoice_date_due',                      // 24: Due date
+                'invoice_line_ids/duration_price',       // 25: Duration Price
             ];
 
             $entries = [];
@@ -677,6 +682,7 @@ class OdooService
                                 'product_name' => $productName,
                                 'license_plate' => $licensePlate,
                                 'serial_number' => $serialNumber,
+                                'duration_price' => (float)($row[25] ?? 0),
                             ];
                         }
                     }
@@ -746,6 +752,7 @@ class OdooService
                 'price_unit',                                // 16: Unit price
                 'rental_uom',                                // 17: month / day
                 'invoice_id/amount_total',                   // 18: Actual invoice price
+                'duration_price',                            // 19: Duration Price
             ];
 
             $entries    = [];
@@ -800,6 +807,7 @@ class OdooService
                         'invoice_state'       => $invoiceState,
                         'payment_state'       => $row[14] ?? null,
                         'price_unit'          => $priceUnit,
+                        'duration_price'      => (float)($row[19] ?? 0),
                         'invoice_amount'      => $invoiceAmount,
                         'rental_uom'          => $row[17] ?? '',
                     ];
@@ -873,6 +881,7 @@ class OdooService
                 'partner_id/vat',                                         // 27: NPWP
                 'invoice_line_ids/rental_qty',                            // 28: Rental Qty
                 'invoice_line_ids/rental_uom',                            // 29: Rental UOM (from line directly)
+                'invoice_line_ids/duration_price',                        // 30: Duration Price
             ];
 
             $entries = [];
@@ -948,6 +957,7 @@ class OdooService
                                 'quantity' => $qty,
                                 'rental_qty' => $rentalQty,
                                 'price_unit' => $priceUnit,
+                                'duration_price' => (float)($row[30] ?? 0),
                                 'customer_name' => $customerName,
                             ];
                         }

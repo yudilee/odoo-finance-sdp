@@ -371,8 +371,11 @@
                         @endif
                     </td>
                     <td class="text-right">
-                        @if($line->price_unit != 0)
-                            {{ number_format($line->price_unit, 0, ',', '.') }}
+                        @php
+                            $unitPrice = ($line->duration_price > 0) ? $line->duration_price : $line->price_unit;
+                        @endphp
+                        @if($unitPrice != 0)
+                            {{ number_format($unitPrice, 0, ',', '.') }}
                         @endif
                     </td>
                     <td class="text-right">
