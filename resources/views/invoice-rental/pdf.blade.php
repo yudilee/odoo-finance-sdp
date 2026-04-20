@@ -642,9 +642,10 @@
                     <div class="catatan-content">
                         @php
                             $catatanContent = [];
+                            $isSummary = isset($printMode) && $printMode === 'summary';
                             
                             // Process Narration
-                            if (!empty($invoice->narration)) {
+                            if (!$isSummary && !empty($invoice->narration)) {
                                 $narration = trim($invoice->narration);
                                 if (!empty($showUsername) && !empty($invoice->partner_name) && stripos($narration, trim($invoice->partner_name)) !== false) {
                                     $narration = trim(str_ireplace(trim($invoice->partner_name), '', $narration));
@@ -663,7 +664,7 @@
                             }
                             
                             // Process Note Lines
-                            if (isset($noteLines) && $noteLines->isNotEmpty()) {
+                            if (!$isSummary && isset($noteLines) && $noteLines->isNotEmpty()) {
                                 foreach($noteLines as $noteL) {
                                     $noteText = trim($noteL->clean_description);
                                     if (!empty($showUsername) && !empty($invoice->partner_name) && stripos($noteText, trim($invoice->partner_name)) !== false) {
