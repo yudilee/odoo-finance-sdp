@@ -97,7 +97,7 @@ function showPrintOptions() {
                 </div>
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Bank Account</p>
-                    <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">{{ $invoice->partner_bank ?? '-' }}</p>
+                    <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">{{ str_contains($invoice->partner_bank ?? '', '1170004641403') ? '1170004641403 - MANDIRI KCU Kyai Tapa Jakarta' : ($invoice->partner_bank ?? '-') }}</p>
                 </div>
             </div>
 

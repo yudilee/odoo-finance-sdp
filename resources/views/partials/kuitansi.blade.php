@@ -248,7 +248,7 @@
             <td class="colon"></td>
             <td class="val">
                 @if(!empty($invoice->partner_bank))
-                    A/N PT. SURYA DARMA PERKASA / A/C {{ $invoice->partner_bank }}
+                    A/N PT. SURYA DARMA PERKASA / A/C {{ str_contains($invoice->partner_bank ?? '', '1170004641403') ? '1170004641403 - MANDIRI KCU Kyai Tapa Jakarta' : $invoice->partner_bank }}
                 @else
                     -
                 @endif
