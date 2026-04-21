@@ -545,7 +545,7 @@
                                 <div class="ketentuan-content">
                                     1. Pembayaran dengan Cek/Giro/Transfer harap diatas namakan<br>
                                     &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;pada bank : &nbsp;&nbsp;{{ $invoice->partner_bank ?? '' }}<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;pada bank : &nbsp;&nbsp;{{ str_contains($invoice->partner_bank ?? '', '1170004641403') ? '1170004641403 - MANDIRI KCU Kyai Tapa Jakarta' : ($invoice->partner_bank ?? '') }}<br>
                                     2. Pembayaran dianggap lunas bila sudah diterima di rekening<br>
                                     &nbsp;&nbsp;&nbsp;&nbsp;PT. SURYA DARMA PERKASA<br>
                                     3. Bukti & perincian pembayaran harap di fax/di email ke : collection@hartonorentcar.com
