@@ -280,11 +280,37 @@
                 !$roundingLines->contains('id', $l->id) &&
                 !$pphLines->contains('id', $l->id)
             );
+            
+            // Extract DPP Lainnya for specific customers
+            $dppLainnyaText = null;
+            $dppLainnyaAmount = null;
+            $partnerNameLower = strtolower($invoice->partner_name ?? '');
+            $isSpecialCustomer = str_contains($partnerNameLower, 'pln indonesia power ubp cilegon') || 
+                                 str_contains($partnerNameLower, 'control systems arena paranusa');
+            
+            if (isset($printMode) && $printMode === 'summary' && $isSpecialCustomer) {
+                $dppLine = $noteLines->first(fn($l) => str_starts_with(strtolower(trim($l->description)), 'dpp lainnya'));
+                if ($dppLine) {
+                    $parts = explode(':', $dppLine->description);
+                    if (count($parts) > 1) {
+                        $dppLainnyaText = trim($parts[0]);
+                        $dppLainnyaAmount = trim($parts[1]);
+                    } else {
+                        // Fallback if there is no colon
+                        $dppLainnyaText = 'DPP Lainnya';
+                        $dppLainnyaAmount = trim(str_ireplace('dpp lainnya', '', strtolower($dppLine->description)));
+                    }
+                    // Remove it from noteLines so it doesn't appear in the main description or notes
+                    $noteLines = $noteLines->reject(fn($l) => $l->id === $dppLine->id);
+                }
+            }
+
             $rentalLines = $allLines->reject(fn($l) => 
                 $discountLines->contains('id', $l->id) || 
                 $roundingLines->contains('id', $l->id) ||
                 $pphLines->contains('id', $l->id) ||
-                $noteLines->contains('id', $l->id)
+                $noteLines->contains('id', $l->id) ||
+                (isset($dppLine) && $l->id === $dppLine->id)
             )->values();
 
             $displayLines = collect();
@@ -607,6 +633,12 @@
                                 <td style="text-align: right; font-weight: bold;">Jumlah</td>
                                 <td style="text-align: right; width: 140px;">{{ number_format($rentalSubtotal, 0, ',', '.') }}</td>
                             </tr>
+                            @if(isset($printMode) && $printMode === 'summary' && $dppLainnyaText && $dppLainnyaAmount)
+                            <tr>
+                                <td style="text-align: right; color: #1e293b;">{{ $dppLainnyaText }}</td>
+                                <td style="text-align: right;">{{ $dppLainnyaAmount }}</td>
+                            </tr>
+                            @endif
                             @if(!isset($printMode) || $printMode !== 'summary')
                                 @if($discountTotal != 0)
                                 <tr>
@@ -652,6 +684,9 @@
                             // Process Narration
                             if (!$isSummary && !empty($invoice->narration)) {
                                 $narration = trim($invoice->narration);
+                                if (str_contains($narration, '##')) {
+                                    $narration = trim(explode('##', $narration)[0]);
+                                }
                                 if (!empty($showUsername) && !empty($invoice->partner_name) && stripos($narration, trim($invoice->partner_name)) !== false) {
                                     $narration = trim(str_ireplace(trim($invoice->partner_name), '', $narration));
                                 }
@@ -672,6 +707,9 @@
                             if (!$isSummary && isset($noteLines) && $noteLines->isNotEmpty()) {
                                 foreach($noteLines as $noteL) {
                                     $noteText = trim($noteL->clean_description);
+                                    if (str_contains($noteText, '##')) {
+                                        $noteText = trim(explode('##', $noteText)[0]);
+                                    }
                                     if (!empty($showUsername) && !empty($invoice->partner_name) && stripos($noteText, trim($invoice->partner_name)) !== false) {
                                         $noteText = trim(str_ireplace(trim($invoice->partner_name), '', $noteText));
                                     }

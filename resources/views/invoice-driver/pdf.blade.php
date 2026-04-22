@@ -598,13 +598,22 @@
                                 
                                 // Process Narration
                                 if (!$isSummary && !empty($invoice->narration)) {
-                                    $catatanContent[] = nl2br(e($invoice->narration));
+                                    $narration = trim($invoice->narration);
+                                    if (str_contains($narration, '##')) {
+                                        $narration = trim(explode('##', $narration)[0]);
+                                    }
+                                    if (!empty($narration)) {
+                                        $catatanContent[] = nl2br(e($narration));
+                                    }
                                 }
                                 
                                 // Process Note Lines
                                 if (!$isSummary && isset($noteLines) && $noteLines->isNotEmpty()) {
                                     foreach($noteLines as $noteL) {
                                         $noteText = trim($noteL->clean_description);
+                                        if (str_contains($noteText, '##')) {
+                                            $noteText = trim(explode('##', $noteText)[0]);
+                                        }
                                         if (!empty($noteText)) {
                                             $catatanContent[] = nl2br(e($noteText));
                                         }

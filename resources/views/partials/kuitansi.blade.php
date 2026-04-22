@@ -101,7 +101,7 @@
             vertical-align: bottom;
         }
         .sig-name-line {
-            margin-top: 50px;
+            margin-top: 80px;
             border-top: 1px solid #000;
             padding-top: 3px;
             font-weight: bold;
@@ -144,14 +144,24 @@
         $addr     = preg_replace('/^' . preg_quote($invoice->partner_name, '/') . '[\r\n]*/i', '', $addr);
         $addrRows = array_filter(array_map('trim', explode("\n", trim($addr))));
 
-        // Due date
-        $dueDate = null;
-        if (!empty($invoice->invoice_date_due)) {
-            try { $dueDate = \Carbon\Carbon::parse($invoice->invoice_date_due); } catch (\Exception $e) {}
+        // Invoice date
+        $invDateStr = $invoice->invoice_date ?? null;
+        $invDate = null;
+        if (!empty($invDateStr)) {
+            try { $invDate = \Carbon\Carbon::parse($invDateStr); } catch (\Exception $e) {}
         }
 
-        // Invoice date
-        $invDate = $invoice->invoice_date ?? null;
+        // Due date logic
+        $dueDate = null;
+        if (!empty($invoice->payment_term) && preg_match('/(\d+)\s*Days?/i', $invoice->payment_term, $matches)) {
+            if ($invDate) {
+                $dueDate = $invDate->copy()->addDays((int)$matches[1]);
+            }
+        }
+        
+        if (!$dueDate && !empty($invoice->invoice_date_due)) {
+            try { $dueDate = \Carbon\Carbon::parse($invoice->invoice_date_due); } catch (\Exception $e) {}
+        }
 
         // Manager / SPV — invoice first, then settings fallback
         $managerName = !empty($invoice->manager_name)
