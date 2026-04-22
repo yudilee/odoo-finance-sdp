@@ -27,7 +27,7 @@ class BackupService
             mkdir($backupDir, 0755, true);
         }
 
-        $dbPath = database_path('database.sqlite');
+        $dbPath = config('database.connections.sqlite.database');
         
         if (!file_exists($dbPath)) {
             throw new \Exception('SQLite database file not found.');
@@ -98,7 +98,7 @@ class BackupService
      */
     protected function restoreFromPath($path, $deleteAfter = false)
     {
-        $dbPath = database_path('database.sqlite');
+        $dbPath = config('database.connections.sqlite.database');
         
         // Decompress gzip to temp file
         $tempPath = database_path('restore_temp.sqlite');
