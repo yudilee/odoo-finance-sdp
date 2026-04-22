@@ -286,7 +286,8 @@
             $dppLainnyaAmount = null;
             $partnerNameLower = strtolower($invoice->partner_name ?? '');
             $isSpecialCustomer = str_contains($partnerNameLower, 'pln indonesia power ubp cilegon') || 
-                                 str_contains($partnerNameLower, 'control systems arena paranusa');
+                                 str_contains($partnerNameLower, 'control systems arena paranusa') ||
+                                 str_contains($partnerNameLower, 'control systems arena para nusa');
             
             if (isset($printMode) && $printMode === 'summary' && $isSpecialCustomer) {
                 $dppLine = $noteLines->first(fn($l) => str_starts_with(strtolower(trim($l->description)), 'dpp lainnya'));
