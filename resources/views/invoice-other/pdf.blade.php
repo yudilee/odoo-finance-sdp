@@ -257,11 +257,80 @@
 
     @foreach($invoices as $invoice)
     @php
-        $hasTax = str_starts_with($invoice->name, 'INVOT');
-        $regularLines = $invoice->lines->filter(fn($l) => $l->quantity != 0 || $l->price_unit != 0)->values();
-        $noteLines = $invoice->lines->filter(fn($l) => $l->quantity == 0 && $l->price_unit == 0 && !empty($l->description));
+        $hasTax = str_starts_with($invoice->name, 'INVOT') || $invoice->amount_tax > 0;
+        
+        $allLines = $invoice->lines;
+        
+        $discountLines = $allLines->filter(fn($l) => 
+            str_contains(strtolower($l->description), 'discount') || 
+            str_contains(strtolower($l->description), 'potongan') ||
+            $l->price_unit < 0
+        );
+        
+        $roundingLines = $allLines->filter(fn($l) => 
+            !$discountLines->contains('id', $l->id) && (
+                str_contains(strtolower($l->description), 'pembulatan') || 
+                str_contains(strtolower($l->description), 'rounding') ||
+                str_contains(strtolower($l->description), '(inv)') ||
+                str_contains(strtolower($l->description), 'driver') ||
+                str_contains(strtolower($l->description), 'lain-lain')
+            )
+        );
+        
+        $pphLines = $allLines->filter(fn($l) => 
+            str_contains(strtolower($l->description), 'pph 2%') || 
+            str_contains(strtolower($l->description), 'pph 2 %')
+        );
+
+        $noteLines = $allLines->filter(fn($l) => 
+            $l->quantity == 0 && $l->price_unit == 0 && !empty($l->description) &&
+            !$discountLines->contains('id', $l->id) && 
+            !$roundingLines->contains('id', $l->id) &&
+            !$pphLines->contains('id', $l->id)
+        );
+
+        // Extract DPP Lainnya for specific customers
+        $dppLainnyaText = null;
+        $dppLainnyaAmount = null;
+        $partnerNameLower = strtolower($invoice->partner_name ?? '');
+        $isSpecialCustomer = str_contains($partnerNameLower, 'pln indonesia power ubp cilegon') || 
+                             str_contains($partnerNameLower, 'control systems arena paranusa') ||
+                             str_contains($partnerNameLower, 'control systems arena para nusa');
+        
+        if (isset($printMode) && $printMode === 'summary' && $isSpecialCustomer) {
+            $dppLine = $noteLines->first(fn($l) => str_starts_with(strtolower(trim($l->description)), 'dpp lainnya'));
+            if ($dppLine) {
+                $parts = explode(':', $dppLine->description);
+                if (count($parts) > 1) {
+                    $dppLainnyaText = trim($parts[0]);
+                    $dppLainnyaAmount = trim($parts[1]);
+                } else {
+                    $dppLainnyaText = 'DPP Lainnya';
+                    $dppLainnyaAmount = trim(str_ireplace('dpp lainnya', '', strtolower($dppLine->description)));
+                }
+                $noteLines = $noteLines->reject(fn($l) => $l->id === $dppLine->id);
+            }
+        }
+
+        $regularLines = $allLines->reject(fn($l) => 
+            $discountLines->contains('id', $l->id) || 
+            $roundingLines->contains('id', $l->id) ||
+            $pphLines->contains('id', $l->id) ||
+            $noteLines->contains('id', $l->id) ||
+            (isset($dppLine) && $l->id === $dppLine->id)
+        )->values();
+
         // Check if any line has a quantity to decide whether to show SATUAN column
         $showUnitColumn = $regularLines->contains(fn($l) => $l->quantity > 0);
+        
+        $otherSubtotal = $invoice->amount_untaxed;
+        $discountTotal = $discountLines->sum(fn($l) => $l->quantity * $l->price_unit ?: $l->price_unit);
+        $roundingTotal = $roundingLines->sum(fn($l) => $l->quantity * $l->price_unit ?: $l->price_unit);
+        
+        if (!isset($printMode) || $printMode !== 'summary') {
+            $otherSubtotal = $otherSubtotal - $discountTotal - $roundingTotal;
+        }
+
         // Fallback to app settings if Odoo fields are empty
         $managerName = !empty($invoice->manager_name)
             ? $invoice->manager_name
@@ -385,12 +454,6 @@
             </thead>
             <tbody>
                 @php
-                    $allLines = $invoice->lines;
-                    $noteLines = $allLines->filter(fn($l) => 
-                        $l->quantity == 0 && $l->price_unit == 0 && !empty($l->description)
-                    );
-                    $regularLines = $allLines->filter(fn($l) => $l->quantity != 0 || $l->price_unit != 0)->values();
-
                     $displayLines = collect();
                     if (isset($printMode) && $printMode === 'summary') {
                         if ($noteLines->isNotEmpty()) {
@@ -501,8 +564,38 @@
                         <table class="totals-table" style="width: 100%;">
                             <tr>
                                 <td style="text-align: right; font-weight: bold;">Jumlah</td>
-                                <td style="text-align: right; width: 140px;">{{ number_format($invoice->amount_untaxed, 0, ',', '.') }}</td>
+                                <td style="text-align: right; width: 140px;">{{ number_format($otherSubtotal, 0, ',', '.') }}</td>
                             </tr>
+                            
+                            @if(!isset($printMode) || $printMode !== 'summary')
+                                @if($discountTotal != 0)
+                                <tr>
+                                    <td style="text-align: right; color: #ef4444;">Discount</td>
+                                    <td style="text-align: right; color: #ef4444;">{{ number_format($discountTotal, 0, ',', '.') }}</td>
+                                </tr>
+                                @endif
+                                @if($roundingTotal != 0)
+                                <tr>
+                                    <td style="text-align: right;">Lain - lain</td>
+                                    <td style="text-align: right;">{{ number_format($roundingTotal, 0, ',', '.') }}</td>
+                                </tr>
+                                @endif
+
+                                @if(isset($printMode) && $printMode === 'detail' && ($discountTotal != 0 || $roundingTotal != 0))
+                                <tr>
+                                    <td style="text-align: right; font-weight: bold;">Subtotal</td>
+                                    <td style="text-align: right; font-weight: bold; border-top: 1px solid #000;">{{ number_format($invoice->amount_untaxed, 0, ',', '.') }}</td>
+                                </tr>
+                                @endif
+                            @endif
+
+                            @if(isset($printMode) && $printMode === 'summary' && $dppLainnyaText)
+                                <tr>
+                                    <td style="text-align: right; font-weight: bold; padding-top: 10px;">{{ $dppLainnyaText }}</td>
+                                    <td style="text-align: right; font-weight: bold; padding-top: 10px;">{{ $dppLainnyaAmount }}</td>
+                                </tr>
+                            @endif
+
                             <tr><td colspan="2" style="height: 8px;"></td></tr>
                             @if($hasTax)
                             {{-- WITH TAX: Show PPN row with border --}}

@@ -789,6 +789,9 @@ class OdooService
                         $numericId = (int)$m[1];
                     }
 
+                    $subStart = $row[5] ?? null;
+                    $subEnd = $row[6] ?? null;
+
                     $entries[] = [
                         'period_odoo_id'      => $rawId,
                         'period_numeric_id'   => $numericId,
@@ -796,8 +799,8 @@ class OdooService
                         'partner_name'        => $row[2] ?? '',
                         'rental_status'       => $rentalStatus,
                         'rental_type'         => $row[4] ?? 'Subscription',
-                        'actual_start_rental' => !empty($row[5]) ? substr($row[5], 0, 10) : null,
-                        'actual_end_rental'   => !empty($row[6]) ? substr($row[6], 0, 10) : null,
+                        'actual_start_rental' => $subStart,
+                        'actual_end_rental'   => $subEnd,
                         'period_type'         => $row[7] ?? '',
                         'product_name'        => $row[8] ?? '',
                         'invoice_date'        => $row[9] ?? null,
@@ -883,6 +886,9 @@ class OdooService
                 'invoice_line_ids/rental_qty',                            // 28: Rental Qty
                 'invoice_line_ids/rental_uom',                            // 29: Rental UOM (from line directly)
                 'invoice_line_ids/duration_price',                        // 30: Duration Price
+                'invoice_line_ids/product_id/name',                       // 31: Product Name
+                'invoice_line_ids/sale_order_id/actual_start_rental',     // 32: Actual Start (with time)
+                'invoice_line_ids/sale_order_id/actual_end_rental',       // 33: Actual End (with time)
             ];
 
             $entries = [];
@@ -939,6 +945,17 @@ class OdooService
                         $rentalQty = (float)($row[28] ?? 0);
                         $priceUnit = (float)($row[16] ?? 0);
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
+                        $productName = $row[31] ?? '';
+
+                        // Pull exact time from Rental Order if available, otherwise fallback to move line date
+                        $actualStart = !empty($row[32]) ? $row[32] : ($row[12] ?? '');
+                        $actualEnd = !empty($row[33]) ? $row[33] : ($row[13] ?? '');
+
+                        // Prepend product name to description if it's not already there, so we can filter by it
+                        if (!empty($productName) && !str_contains(strtolower($lineDesc), strtolower($productName))) {
+                            // If it's something like "Lain-Lain (inv)", we format it nicely
+                            $lineDesc = $productName . "\n" . $lineDesc;
+                        }
 
                         if (!empty($lineDesc) || $qty > 0 || $priceUnit > 0) {
                             if (empty($currentEntry['contract_ref'])) {

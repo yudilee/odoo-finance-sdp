@@ -320,7 +320,7 @@
             )->values();
 
             $displayLines = collect();
-            if (isset($printMode) && $printMode === 'summary' && str_starts_with($invoice->name, 'INVRS')) {
+            if (isset($printMode) && $printMode === 'summary' && (str_starts_with($invoice->name, 'INVRS') || str_starts_with($invoice->name, 'INVRT'))) {
                 // Summary Mode: Group all rental lines
                 if ($rentalLines->isNotEmpty()) {
                     $totalQty = $rentalLines->sum('quantity');
@@ -375,7 +375,7 @@
             }
 
             $refParts = $invoice->ref ? explode(' - ', $invoice->ref) : [];
-            $isSubscription = str_starts_with($invoice->name, 'INVRS'); // kept for other logic if needed
+            $isSubscription = str_starts_with($invoice->name, 'INVRS') || str_starts_with($invoice->name, 'INVRT'); // kept for other logic if needed
         @endphp
 
         <table class="lines-table">
@@ -519,12 +519,31 @@
                                 preg_match('/\[([^\]]+)\]/', $line->description ?? '', $codeMatch);
                                 $productCode = $codeMatch[1] ?? '';
 
-                                $periodeStart = $line->actual_start;
-                                $periodeEnd   = $line->actual_end;
+                                $periodeStart = !empty($line->actual_start) ? \Carbon\Carbon::parse($line->actual_start) : null;
+                                $periodeEnd   = !empty($line->actual_end) ? \Carbon\Carbon::parse($line->actual_end) : null;
 
+                                $isINVRT = str_starts_with($invoice->name, 'INVRT');
+                                
+                                $startStr = '-';
+                                if ($periodeStart) {
+                                    if ($isINVRT && $periodeStart->format('H:i') !== '00:00') {
+                                        $startStr = $periodeStart->format('d/m h:i A');
+                                    } else {
+                                        $startStr = $periodeStart->format('d/m/Y');
+                                    }
+                                }
+
+                                $endStr = '-';
+                                if ($periodeEnd) {
+                                    if ($isINVRT && $periodeEnd->format('H:i') !== '00:00') {
+                                        $endStr = $periodeEnd->format('d/m h:i A');
+                                    } else {
+                                        $endStr = $periodeEnd->format('d/m/Y');
+                                    }
+                                }
 
                                 $periodeStr = ($periodeStart || $periodeEnd) 
-                                    ? ($periodeStart ? $periodeStart->format('d/m/Y') : '-') . ' s/d ' . ($periodeEnd ? $periodeEnd->format('d/m/Y') : '-')
+                                    ? $startStr . ' s/d ' . $endStr
                                     : '-';
                             @endphp
 
@@ -536,7 +555,7 @@
                                         <tr>
                                             <td style="width: 35%; text-align: left; padding: 0; vertical-align: top;">{{ $productCode }}</td>
                                             <td style="width: 25%; text-align: center; padding: 0; vertical-align: top;">{{ $line->serial_number ?? '-' }}</td>
-                                            <td style="width: 40%; text-align: center; padding: 0; vertical-align: top;">{{ $periodeStr }}</td>
+                                            <td style="width: 40%; text-align: center; padding: 0; vertical-align: top; white-space: nowrap;">{{ $periodeStr }}</td>
                                         </tr>
                                     </table>
                                 @else
@@ -662,7 +681,7 @@
                                 </tr>
                                 @endif
 
-                                @if(isset($printMode) && $printMode === 'detail')
+                                @if(isset($printMode) && $printMode === 'detail' && ($discountTotal != 0 || $roundingTotal != 0))
                                 <tr>
                                     <td style="text-align: right; font-weight: bold;">Subtotal</td>
                                     <td style="text-align: right; font-weight: bold; border-top: 1px solid #000;">{{ number_format($invoice->amount_untaxed, 0, ',', '.') }}</td>
