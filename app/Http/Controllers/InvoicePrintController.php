@@ -109,6 +109,7 @@ class InvoicePrintController extends Controller
             pdfBase64: $pdfBase64,
             agentId:   $dest['agent_id'],
             printer:   $dest['printer'],
+            profile:   null, // use hub default profile
             extra:     ['reference_id' => $request->invoice_name]
         );
 
@@ -176,6 +177,7 @@ class InvoicePrintController extends Controller
             pdfBase64: $pdfBase64,
             agentId:   $dest['agent_id'],
             printer:   $dest['printer'],
+            profile:   null, // use hub default profile
             extra:     ['reference_id' => 'bulk_' . count($invoices)]
         );
 

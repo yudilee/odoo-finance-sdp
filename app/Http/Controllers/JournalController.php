@@ -41,7 +41,7 @@ class JournalController extends Controller
         
         $service = new PrintHubService();
         $result = $service->printPdf($printer, $pdfBase64, [
-            'job_name' => 'Journal: ' . $entry->move_name
+            'job_name' => 'Journal: ' . $entry->move_name,
         ]);
 
         if ($result['success'] && $request->has('set_default')) {
@@ -83,7 +83,7 @@ class JournalController extends Controller
         
         $service = new PrintHubService();
         $result = $service->printPdf($printer, $pdfBase64, [
-            'job_name' => 'Bulk Journals (' . count($entries) . ')'
+            'job_name' => 'Bulk Journals (' . count($entries) . ')',
         ]);
 
         if ($result['success'] && $request->has('set_default')) {

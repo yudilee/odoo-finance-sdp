@@ -19,20 +19,38 @@ class PrintHubRegisterSchemas extends Command
     {
         $this->info('Starting schema registration with Print Hub...');
 
-        $this->registerJournalSchema($service);
-        $this->registerRentalSchema($service);
-        $this->registerDriverSchema($service);
-        $this->registerOtherSchema($service);
-        $this->registerVehicleSchema($service);
+        $exitCode = 0;
 
-        $this->info('Schema registration complete!');
-        return 0;
+        $schemas = [
+            'journal_entry'  => fn() => $this->registerJournalSchema($service),
+            'invoice_rental' => fn() => $this->registerRentalSchema($service),
+            'invoice_driver' => fn() => $this->registerDriverSchema($service),
+            'invoice_other'  => fn() => $this->registerOtherSchema($service),
+            'invoice_vehicle'=> fn() => $this->registerVehicleSchema($service),
+        ];
+
+        foreach ($schemas as $name => $registerFn) {
+            $this->line("  - Registering: {$name}");
+            $result = $registerFn();
+            if (!$result['success']) {
+                $this->error("    ✗ Failed: {$result['message']}");
+                $exitCode = 1;
+            } else {
+                $this->info("    ✓ {$result['message']}");
+            }
+        }
+
+        if ($exitCode === 0) {
+            $this->info('All schemas registered successfully!');
+        } else {
+            $this->error('Some schemas failed to register. Check the output above.');
+        }
+
+        return $exitCode;
     }
 
-    protected function registerJournalSchema(PrintHubService $service)
+    protected function registerJournalSchema(PrintHubService $service): array
     {
-        $this->line('  - Registering: journal_entry');
-        
         $fields = [
             'move_name'           => ['type' => 'string', 'label' => 'Voucher Number'],
             'date'                => ['type' => 'date',   'label' => 'Date'],
@@ -58,18 +76,16 @@ class PrintHubRegisterSchemas extends Command
         $sample = JournalEntry::with('lines')->latest()->first();
         $sampleData = $sample ? $this->prepareSample($sample) : null;
 
-        $service->registerSchema('journal_entry', [
+        return $service->registerSchema('journal_entry', [
             'label'       => 'Journal Voucher (SDP)',
             'fields'      => $fields,
             'tables'      => $tables,
-            'sample_data' => $sampleData
+            'sample_data' => $sampleData,
         ]);
     }
 
-    protected function registerRentalSchema(PrintHubService $service)
+    protected function registerRentalSchema(PrintHubService $service): array
     {
-        $this->line('  - Registering: invoice_rental');
-
         $fields = [
             'name'                     => ['type' => 'string', 'label' => 'Invoice Number'],
             'invoice_date'             => ['type' => 'date',   'label' => 'Invoice Date'],
@@ -102,18 +118,16 @@ class PrintHubRegisterSchemas extends Command
         $sample = InvoiceRental::with('lines')->latest()->first();
         $sampleData = $sample ? $this->prepareSample($sample) : null;
 
-        $service->registerSchema('invoice_rental', [
+        return $service->registerSchema('invoice_rental', [
             'label'       => 'Rental Invoice (SDP)',
             'fields'      => $fields,
             'tables'      => $tables,
-            'sample_data' => $sampleData
+            'sample_data' => $sampleData,
         ]);
     }
 
-    protected function registerDriverSchema(PrintHubService $service)
+    protected function registerDriverSchema(PrintHubService $service): array
     {
-        $this->line('  - Registering: invoice_driver');
-
         $fields = [
             'name'           => ['type' => 'string', 'label' => 'Invoice Number'],
             'invoice_date'   => ['type' => 'date',   'label' => 'Invoice Date'],
@@ -138,21 +152,20 @@ class PrintHubRegisterSchemas extends Command
         $sample = InvoiceDriver::with('lines')->latest()->first();
         $sampleData = $sample ? $this->prepareSample($sample) : null;
 
-        $service->registerSchema('invoice_driver', [
+        return $service->registerSchema('invoice_driver', [
             'label'       => 'Driver Invoice (SDP)',
             'fields'      => $fields,
             'tables'      => $tables,
-            'sample_data' => $sampleData
+            'sample_data' => $sampleData,
         ]);
     }
 
-    protected function registerOtherSchema(PrintHubService $service)
+    protected function registerOtherSchema(PrintHubService $service): array
     {
-        $this->line('  - Registering: invoice_other');
         $sample = InvoiceOther::with('lines')->latest()->first();
         $sampleData = $sample ? $this->prepareSample($sample) : null;
 
-        $service->registerSchema('invoice_other', [
+        return $service->registerSchema('invoice_other', [
             'label'  => 'Other Invoice (SDP)',
             'fields' => [
                 'name'         => ['type' => 'string', 'label' => 'Invoice Number'],
@@ -169,17 +182,16 @@ class PrintHubRegisterSchemas extends Command
                     ]
                 ]
             ],
-            'sample_data' => $sampleData
+            'sample_data' => $sampleData,
         ]);
     }
 
-    protected function registerVehicleSchema(PrintHubService $service)
+    protected function registerVehicleSchema(PrintHubService $service): array
     {
-        $this->line('  - Registering: invoice_vehicle');
         $sample = InvoiceVehicle::with('lines')->latest()->first();
         $sampleData = $sample ? $this->prepareSample($sample) : null;
 
-        $service->registerSchema('invoice_vehicle', [
+        return $service->registerSchema('invoice_vehicle', [
             'label'  => 'Vehicle Sales (SDP)',
             'fields' => [
                 'name'         => ['type' => 'string', 'label' => 'Invoice Number'],
@@ -194,7 +206,7 @@ class PrintHubRegisterSchemas extends Command
                     ]
                 ]
             ],
-            'sample_data' => $sampleData
+            'sample_data' => $sampleData,
         ]);
     }
 

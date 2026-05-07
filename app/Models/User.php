@@ -79,10 +79,13 @@ class User extends Authenticatable
     {
         $pref = $this->preferences['print_queues'][$docType] ?? [];
         
-        $defaultQueue = \App\Models\Setting::get('print_hub_default_profile') ?? 'kuitansi';
-        if (str_starts_with($docType, 'invoice')) {
-            $defaultQueue = 'invoice';
-        }
+        // Determine default queue based on document type
+        $defaultQueue = match (true) {
+            str_starts_with($docType, 'invoice') => 'invoice',
+            $docType === 'kuitansi'              => 'kuitansi',
+            $docType === 'journal'               => 'journal',
+            default                              => 'default',
+        };
         
         return [
             'queue'    => $pref['queue']    ?? $defaultQueue,

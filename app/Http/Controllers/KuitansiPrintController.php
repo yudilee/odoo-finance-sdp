@@ -69,6 +69,7 @@ class KuitansiPrintController extends Controller
             pdfBase64: $pdfBase64,
             agentId: $dest['agent_id'],
             printer: $dest['printer'],
+            profile: null, // use hub default profile
             extra: ['reference_id' => $invoiceName]
         );
 

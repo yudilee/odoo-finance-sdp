@@ -108,12 +108,6 @@
             async open(entryId = null) {
                 this.targetEntryId = entryId;
                 this.error = '';
-                
-                if (this.selectedPrinter) {
-                    this.print();
-                    return;
-                }
-
                 this.showModal = true;
                 this.fetchPrinters();
             },
