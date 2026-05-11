@@ -142,6 +142,7 @@
         // Address: strip partner name from top
         $addr     = $invoice->partner_address ?? $invoice->partner_address_complete ?? '';
         $addr     = preg_replace('/^' . preg_quote($invoice->partner_name, '/') . '[\r\n]*/i', '', $addr);
+        $addr     = preg_replace('/,?\s*Indonesia\s*$/i', '', trim($addr));
         $addrRows = array_filter(array_map('trim', explode("\n", trim($addr))));
 
         // Invoice date

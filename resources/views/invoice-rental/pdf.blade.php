@@ -440,10 +440,11 @@
                                             <td colspan="3" style="padding-bottom: 5px; padding-left: 0;">
                                                 <span style="font-size: 9px; color: #64748b;">Kepada Yth.</span><br>
                                                 <span class="customer-name">{{ $invoice->partner_name }}</span>
-                                                @php
-                                                    $address = $invoice->partner_address ?? $invoice->partner_address_complete ?? '';
-                                                    $address = preg_replace('/^' . preg_quote($invoice->partner_name, '/') . '[\r\n]*/i', '', $address);
-                                                @endphp
+                                                    @php
+                                                        $address = $invoice->partner_address ?? $invoice->partner_address_complete ?? '';
+                                                        $address = preg_replace('/^' . preg_quote($invoice->partner_name, '/') . '[\r\n]*/i', '', $address);
+                                                        $address = preg_replace('/,?\s*Indonesia\s*$/i', '', trim($address));
+                                                    @endphp
                                                 <div class="customer-address">{!! nl2br(e(trim($address))) !!}</div>
                                                 @if($invoice->partner_npwp)
                                                 <div style="font-size: 9px; margin-top: 3px; font-weight: bold; padding-top: 5px;">NPWP : {{ $invoice->partner_npwp }}</div>

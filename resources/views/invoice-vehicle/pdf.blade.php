@@ -319,6 +319,7 @@
                                                 @php
                                                     $address = $invoice->partner_address ?? $invoice->partner_address_complete ?? '';
                                                     $address = preg_replace('/^' . preg_quote($invoice->partner_name, '/') . '[\r\n]*/i', '', $address);
+                                                    $address = preg_replace('/,?\s*Indonesia\s*$/i', '', trim($address));
                                                 @endphp
                                                 <div class="customer-address">{!! nl2br(e(trim($address))) !!}</div>
                                                 @if($invoice->partner_npwp)
