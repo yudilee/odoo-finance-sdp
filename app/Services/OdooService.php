@@ -1268,7 +1268,13 @@ class OdooService
     }
 
     /**
-     * Enrich entries with child invoice addresses if they exist
+     * Enrich entries with child invoice addresses if they exist.
+     *
+     * Odoo's computed `contact_address` on a child contact always prefixes the
+     * parent company name and uses the parent's formatting, making it look
+     * identical to the parent address.  We therefore build the address manually
+     * from the child's own raw fields (name, street, street2, city, zip,
+     * state_id) so the Invoice Address contact info is properly reflected.
      */
     protected function enrichAddresses(array &$entries): void
     {
@@ -1287,32 +1293,61 @@ class OdooService
         if (empty($partnerIds)) return;
 
         // Fetch all child contacts of type 'invoice' for these partners
+        // We fetch raw address fields so we can build the address ourselves
         $invoiceContacts = $this->execute('res.partner', 'search_read', [
             [['parent_id', 'in', $partnerIds], ['type', '=', 'invoice']],
-            ['parent_id', 'contact_address', 'contact_address_complete', 'vat']
+            ['parent_id', 'name', 'street', 'street2', 'city', 'state_id', 'zip', 'country_id', 'vat']
         ]);
 
         if (empty($invoiceContacts)) return;
 
-        // Map parent_id => data
+        // Map parent_id => data (built from raw fields)
         $addressMap = [];
         foreach ($invoiceContacts as $contact) {
             $parentId = is_array($contact['parent_id']) ? $contact['parent_id'][0] : $contact['parent_id'];
-            
-            $addr = $contact['contact_address'] ?? '';
-            $addrComplete = $contact['contact_address_complete'] ?? '';
-            $vat = $contact['vat'] ?? '';
 
-            // Only use if not empty
-            if (!empty($addr) || !empty($addrComplete)) {
-                // If there are multiple invoice addresses, we take the first one found
-                if (!isset($addressMap[$parentId])) {
-                    $addressMap[$parentId] = [
-                        'address' => $addr,
-                        'address_complete' => $addrComplete,
-                        'vat' => $vat
-                    ];
-                }
+            // If there are multiple invoice addresses, we take the first one found
+            if (isset($addressMap[$parentId])) continue;
+
+            $childName = $contact['name'] ?? '';
+            $street    = $contact['street'] ?? '';
+            $street2   = $contact['street2'] ?? '';
+            $city      = $contact['city'] ?? '';
+            $stateId   = $contact['state_id'] ?? null;
+            $stateName = is_array($stateId) ? ($stateId[1] ?? '') : '';
+            // Remove country suffix like " (ID)" from state name for cleaner display
+            $stateName = preg_replace('/\s*\([A-Z]{2}\)\s*$/', '', $stateName);
+            $zip       = $contact['zip'] ?? '';
+            $countryId = $contact['country_id'] ?? null;
+            $country   = is_array($countryId) ? ($countryId[1] ?? '') : '';
+            $vat       = $contact['vat'] ?? '';
+
+            // Build multiline address (matching Odoo's format)
+            $addrLines = [];
+            if (!empty($street))     $addrLines[] = $street;
+            if (!empty($street2))    $addrLines[] = $street2;
+
+            // City + State + Zip line
+            $cityLine = '';
+            if (!empty($city))       $cityLine .= $city;
+            if (!empty($stateName))  $cityLine .= ' ' . $stateName;
+            if (!empty($zip))        $cityLine .= ' ' . $zip;
+            if (!empty(trim($cityLine))) $addrLines[] = trim($cityLine);
+
+            if (!empty($country))    $addrLines[] = $country;
+
+            $addr = implode("\n", $addrLines);
+
+            // Build single-line "complete" address
+            $completeParts = array_filter([$street, $zip . ' ' . $city, $stateName, $country]);
+            $addrComplete = implode(', ', $completeParts);
+
+            if (!empty($addr)) {
+                $addressMap[$parentId] = [
+                    'address'          => $addr,
+                    'address_complete' => $addrComplete,
+                    'vat'              => $vat,
+                ];
             }
         }
 
@@ -1320,7 +1355,7 @@ class OdooService
         foreach ($entries as &$entry) {
             $rawId = $entry['partner_id_odoo'] ?? null;
             $pid = is_array($rawId) ? $rawId[0] : $rawId;
-            
+
             if ($pid && isset($addressMap[$pid])) {
                 $entry['partner_address'] = $addressMap[$pid]['address'];
                 $entry['partner_address_complete'] = $addressMap[$pid]['address_complete'];
