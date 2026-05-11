@@ -46,6 +46,7 @@ class SyncService
                 $invoice->lines()->create([
                     'description' => $line['description'],
                     'quantity' => $line['quantity'],
+                    'rental_qty' => $line['rental_qty'] ?? null,
                     'price_unit' => $line['price_unit'],
                     'duration_price' => $line['duration_price'] ?? 0,
                 ]);

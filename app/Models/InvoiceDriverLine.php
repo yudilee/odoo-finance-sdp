@@ -10,12 +10,14 @@ class InvoiceDriverLine extends Model
         'invoice_driver_id',
         'description',
         'quantity',
+        'rental_qty',
         'price_unit',
         'duration_price',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:2',
+        'rental_qty' => 'decimal:2',
         'price_unit' => 'decimal:2',
         'duration_price' => 'decimal:2',
     ];

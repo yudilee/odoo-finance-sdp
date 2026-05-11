@@ -347,6 +347,7 @@ class OdooService
                 'invoice_date_due',                      // 22: Due date
                 'invoice_line_ids/duration_price',       // 23: Duration Price
                 'partner_id/.id',                        // 24: Partner ID for address enrichment
+                'invoice_line_ids/rental_qty',           // 25: Rental Qty
             ];
 
             $entries = [];
@@ -412,6 +413,7 @@ class OdooService
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
+                                'rental_qty' => (float)($row[25] ?? 0),
                                 'price_unit' => $linePrice,
                                 'duration_price' => (float)($row[23] ?? 0),
                             ];

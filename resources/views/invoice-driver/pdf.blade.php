@@ -491,8 +491,11 @@
                             @endif
                             <td class="text-center">
                                 @if(!isset($printMode) || $printMode !== 'summary')
-                                    @if($line->quantity > 0)
-                                        {{ number_format($line->quantity, 0) }} Org.
+                                    @php
+                                        $displayQty = ($line->rental_qty > 0) ? $line->rental_qty : $line->quantity;
+                                    @endphp
+                                    @if($displayQty > 0)
+                                        {{ number_format($displayQty, 0) }} Org.
                                     @endif
                                 @endif
                             </td>
