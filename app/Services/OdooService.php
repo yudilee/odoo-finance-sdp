@@ -876,7 +876,7 @@ class OdooService
                         $serialNum = $row[11] ?? '';
                         $actualStart = $row[12] ?? '';
                         $actualEnd = $row[13] ?? '';
-                        $uom = $row[14] ?? $row[29] ?? '';
+                        $uom = !empty($row[29]) ? $row[29] : ($row[14] ?? '');
                         $qty = (float)($row[15] ?? 0);
                         $priceUnit = (float)($row[16] ?? 0);
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
