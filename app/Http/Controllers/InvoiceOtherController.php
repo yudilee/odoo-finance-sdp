@@ -106,9 +106,9 @@ class InvoiceOtherController extends Controller
     }
 
     /**
-     * Sync invoice other entries from Odoo
+     * Get all Odoo IDs for the given date range to sync
      */
-    public function sync(Request $request)
+    public function getSyncIds(Request $request)
     {
         $request->validate([
             'date_from' => 'required|date',
@@ -117,70 +117,80 @@ class InvoiceOtherController extends Controller
 
         try {
             $odoo = new OdooService();
-
-            $result = $odoo->fetchInvoiceOthers(
+            $result = $odoo->getInvoiceOtherIds(
                 $request->input('date_from'),
                 $request->input('date_to')
             );
 
             if (!$result['success']) {
-                ImportLog::create([
-                    'source' => 'odoo_invoice_other',
-                    'imported_at' => now(),
-                    'items_count' => 0,
-                    'status' => 'failed',
-                    'error_message' => $result['message'] ?? 'Unknown error',
-                ]);
-
                 return response()->json([
                     'success' => false,
                     'message' => 'Odoo fetch failed: ' . ($result['message'] ?? 'Unknown error')
                 ]);
             }
 
-            if (empty($result['data'])) {
+            return response()->json([
+                'success' => true,
+                'ids' => $result['ids'],
+                'count' => $result['count']
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch IDs: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Sync a specific batch of IDs
+     */
+    public function syncBatch(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+        ]);
+
+        try {
+            $odoo = new OdooService();
+            $result = $odoo->fetchInvoiceOthersByIds($request->input('ids'));
+
+            if (!$result['success']) {
                 return response()->json([
-                    'success' => true,
-                    'message' => 'No invoice other entries found for the given date range.',
-                    'count' => 0,
+                    'success' => false,
+                    'message' => 'Odoo batch fetch failed: ' . ($result['message'] ?? 'Unknown error')
                 ]);
             }
 
-            // Save to database
+            if (empty($result['data'])) {
+                return response()->json([
+                    'success' => true,
+                    'count' => 0,
+                    'message' => 'No data returned for this batch.'
+                ]);
+            }
+
             $syncService = new \App\Services\SyncService();
             $savedCount = $syncService->saveInvoiceOthers($result['data']);
 
-            ImportLog::create([
-                'source' => 'odoo_invoice_other',
-                'imported_at' => now(),
-                'items_count' => $savedCount,
-                'status' => 'success',
-                'summary_json' => [
-                    'date_from' => $request->input('date_from'),
-                    'date_to' => $request->input('date_to'),
-                    'entries_count' => $savedCount,
-                ],
-            ]);
-
             return response()->json([
                 'success' => true,
-                'message' => "Synced {$savedCount} invoice other entries from Odoo",
                 'count' => $savedCount,
             ]);
         } catch (\Exception $e) {
-            ImportLog::create([
-                'source' => 'odoo_invoice_other',
-                'imported_at' => now(),
-                'items_count' => 0,
-                'status' => 'failed',
-                'error_message' => $e->getMessage(),
-            ]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Sync failed: ' . $e->getMessage()
+                'message' => 'Batch sync failed: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Sync invoice other entries from Odoo (Legacy/Single-shot)
+     */
+    public function sync(Request $request)
+    {
+        return $this->getSyncIds($request);
     }
 
 

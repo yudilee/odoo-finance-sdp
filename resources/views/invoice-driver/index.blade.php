@@ -10,6 +10,9 @@
     syncing: false,
     syncMessage: '',
     syncSuccess: null,
+    syncTotal: 0,
+    syncCurrent: 0,
+    syncProgress: 0,
     columns: {
         name: { visible: true, width: '180px', label: 'Invoice #' },
         date: { visible: true, width: '110px', label: 'Date' },
@@ -67,11 +70,17 @@
             this.syncSuccess = false;
             return;
         }
+        
         this.syncing = true;
-        this.syncMessage = '';
+        this.syncMessage = 'Fetching IDs from Odoo...';
         this.syncSuccess = null;
+        this.syncTotal = 0;
+        this.syncCurrent = 0;
+        this.syncProgress = 0;
+
         try {
-            const res = await fetch('{{ route('invoice-driver.sync', [], false) }}', {
+            // Phase 1: Get IDs
+            const idRes = await fetch('{{ route('invoice-driver.sync-ids', [], false) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,15 +89,60 @@
                 },
                 body: JSON.stringify({ date_from: dateFrom, date_to: dateTo })
             });
-            const data = await res.json();
-            this.syncSuccess = data.success;
-            this.syncMessage = data.message || (data.success ? 'Sync completed!' : 'Sync failed.');
-            if (data.success && data.count > 0) {
-                setTimeout(() => window.location.reload(), 1500);
+            const idData = await idRes.json();
+            
+            if (!idData.success) {
+                this.syncSuccess = false;
+                this.syncMessage = idData.message || 'Failed to fetch IDs.';
+                this.syncing = false;
+                return;
             }
+
+            const allIds = idData.ids || [];
+            this.syncTotal = allIds.length;
+            
+            if (this.syncTotal === 0) {
+                this.syncSuccess = true;
+                this.syncMessage = 'No invoices found for the selected range.';
+                this.syncing = false;
+                return;
+            }
+
+            // Phase 2: Batch Sync
+            const chunkSize = 500;
+            let processedCount = 0;
+
+            for (let i = 0; i < allIds.length; i += chunkSize) {
+                const batch = allIds.slice(i, i + chunkSize);
+                this.syncMessage = `Syncing batch ${Math.floor(i/chunkSize) + 1} (${i + 1} - ${Math.min(i + chunkSize, allIds.length)} of ${allIds.length})...`;
+                
+                const batchRes = await fetch('{{ route('invoice-driver.sync-batch', [], false) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ ids: batch })
+                });
+                
+                const batchData = await batchRes.json();
+                if (!batchData.success) {
+                    throw new Error(batchData.message || 'Batch sync failed');
+                }
+
+                processedCount += (batchData.count || 0);
+                this.syncCurrent = Math.min(i + chunkSize, allIds.length);
+                this.syncProgress = Math.round((this.syncCurrent / this.syncTotal) * 100);
+            }
+
+            this.syncSuccess = true;
+            this.syncMessage = `Successfully synced ${processedCount} invoices!`;
+            setTimeout(() => window.location.reload(), 1500);
+
         } catch (e) {
             this.syncSuccess = false;
-            this.syncMessage = 'Network error: ' + e.message;
+            this.syncMessage = 'Sync error: ' + e.message;
         } finally {
             this.syncing = false;
         }
@@ -204,7 +258,22 @@
                         <span x-text="syncing ? 'Syncing...' : 'Start Sync'"></span>
                     </button>
                 </div>
-                <div x-show="syncMessage" x-cloak class="mt-3 text-sm px-3 py-2 rounded-lg" :class="syncSuccess ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'" x-text="syncMessage"></div>
+                
+                {{-- Progress Bar --}}
+                <div x-show="syncing && syncTotal > 0" x-cloak class="mt-4">
+                    <div class="flex justify-between text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-widest">
+                        <span x-text="'Processing ' + syncCurrent + ' of ' + syncTotal"></span>
+                        <span x-text="syncProgress + '%'"></span>
+                    </div>
+                    <div class="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-2 overflow-hidden border border-blue-200 dark:border-blue-800">
+                        <div class="bg-blue-600 h-full rounded-full transition-all duration-300 relative"
+                            :style="'width:' + syncProgress + '%'">
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="syncMessage" x-cloak class="mt-3 text-sm px-3 py-2 rounded-lg" :class="syncSuccess === true ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : (syncSuccess === false ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300')" x-text="syncMessage"></div>
             </div>
         </div>
     </div>

@@ -304,50 +304,38 @@ class OdooService
     /**
      * Fetch Invoice Driver entries from Odoo using export_data
      */
-    public function fetchInvoiceDrivers(string $dateFrom, string $dateTo): array
+    public function getInvoiceDriverIds(string $dateFrom, string $dateTo): array
     {
         try {
-            // Search account.move where journal is "Invoice Driver" and state is posted
             $domain = [
                 ['state', '=', 'posted'],
                 ['journal_id.name', '=', 'Invoice Driver'],
                 ['invoice_date', '>=', $dateFrom],
                 ['invoice_date', '<=', $dateTo],
             ];
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
+    }
 
-            $moveIds = $this->execute('account.move', 'search', [$domain]);
-
-            if (empty($moveIds)) {
-                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice driver entries found.'];
-            }
+    public function fetchInvoiceDriversByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name',                                  // 0: Invoice number (INVDV/...)
-                'partner_id/name',                       // 1: Customer name
-                'invoice_date',                          // 2: Invoice date
-                'invoice_payment_term_id/name',          // 3: Payment terms
-                'ref',                                   // 4: Customer Reference
-                'journal_id/name',                       // 5: Journal name
-                'amount_untaxed',                        // 6: Subtotal
-                'amount_tax',                            // 7: Tax
-                'amount_total',                          // 8: Total
-                'invoice_line_ids/name',                 // 9: Line description
-                'invoice_line_ids/quantity',              // 10: Line qty
-                'invoice_line_ids/price_unit',            // 11: Line unit price
-                'partner_bank_id/acc_number',            // 12: Bank account number
-                'bc_manager_id/name',                    // 13: Manager name
-                'bc_spv_id/name',                        // 14: Supervisor name
-                'partner_id/contact_address',            // 15: Address (multiline)
-                'partner_id/contact_address_complete',   // 16: Address (single line)
-                'narration',                             // 17: Terms and Condition
-                'partner_id/vat',                        // 18: NPWP
-                'contract_ref',                          // 19: Contract Ref
-                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
-                'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
-                'invoice_date_due',                      // 22: Due date
-                'invoice_line_ids/duration_price',       // 23: Duration Price
-                'partner_id/.id',                        // 24: Partner ID for address enrichment
-                'invoice_line_ids/rental_qty',           // 25: Rental Qty
+                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
+                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
+                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
+                'partner_bank_id/acc_number', 'bc_manager_id/name', 'bc_spv_id/name',
+                'partner_id/contact_address', 'partner_id/contact_address_complete',
+                'narration', 'partner_id/vat', 'contract_ref',
+                'invoice_line_ids/sale_order_id/rental_contract_id/name',
+                'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'invoice_line_ids/rental_qty',
             ];
 
             $entries = [];
@@ -356,21 +344,13 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-
-                if (!isset($result['datas'])) {
-                    continue;
-                }
+                if (!isset($result['datas'])) continue;
 
                 $currentEntry = null;
-
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
-
-                    // If name is non-empty, this is a new entry header row
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) {
-                            $entries[] = $currentEntry;
-                        }
+                        if ($currentEntry !== null) $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -395,18 +375,14 @@ class OdooService
                         ];
                     }
 
-                    // Add line item
                     if ($currentEntry !== null) {
                         $lineDesc = $row[9] ?? '';
                         $lineQty = (float)($row[10] ?? 0);
                         $linePrice = (float)($row[11] ?? 0);
 
                         if (empty($currentEntry['contract_ref'])) {
-                            if (!empty($row[20])) {
-                                $currentEntry['contract_ref'] = $row[20];
-                            } elseif (!empty($row[21])) {
-                                $currentEntry['contract_ref'] = $row[21];
-                            }
+                            if (!empty($row[20])) $currentEntry['contract_ref'] = $row[20];
+                            elseif (!empty($row[21])) $currentEntry['contract_ref'] = $row[21];
                         }
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
@@ -420,72 +396,58 @@ class OdooService
                         }
                     }
                 }
-
-                if ($currentEntry !== null) {
-                    $entries[] = $currentEntry;
-                }
+                if ($currentEntry !== null) $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
-
-            return [
-                'success' => true,
-                'data' => $entries,
-                'count' => count($entries),
-            ];
+            return ['success' => true, 'data' => $entries];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+            return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public function fetchInvoiceDrivers(string $dateFrom, string $dateTo): array
+    {
+        $res = $this->getInvoiceDriverIds($dateFrom, $dateTo);
+        if (!$res['success']) return $res;
+        return $this->fetchInvoiceDriversByIds($res['ids']);
     }
 
     /**
      * Fetch Invoice Other entries from Odoo using export_data
      * Fetches both "Invoice Other with Tax" and "Invoice Other wo Tax" journals
      */
-    public function fetchInvoiceOthers(string $dateFrom, string $dateTo): array
+    public function getInvoiceOtherIds(string $dateFrom, string $dateTo): array
     {
         try {
-            // Search account.move where journal is Invoice Other (with or without tax) and state is posted
             $domain = [
                 ['state', '=', 'posted'],
                 ['journal_id.name', 'in', ['Invoice Other with Tax', 'Invoice Other wo Tax']],
                 ['invoice_date', '>=', $dateFrom],
                 ['invoice_date', '<=', $dateTo],
             ];
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
+    }
 
-            $moveIds = $this->execute('account.move', 'search', [$domain]);
+    public function fetchInvoiceOthersByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) return ['success' => true, 'data' => []];
 
-            if (empty($moveIds)) {
-                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice other entries found.'];
-            }
-
-            // Same export fields as Invoice Driver
             $exportFields = [
-                'name',                                  // 0: Invoice number (INVOT/... or INVOW/...)
-                'partner_id/name',                       // 1: Customer name
-                'invoice_date',                          // 2: Invoice date
-                'invoice_payment_term_id/name',          // 3: Payment terms
-                'ref',                                   // 4: Customer Reference
-                'journal_id/name',                       // 5: Journal name
-                'amount_untaxed',                        // 6: Subtotal
-                'amount_tax',                            // 7: Tax
-                'amount_total',                          // 8: Total
-                'invoice_line_ids/name',                 // 9: Line description
-                'invoice_line_ids/quantity',              // 10: Line qty
-                'invoice_line_ids/price_unit',            // 11: Line unit price
-                'partner_bank_id/acc_number',            // 12: Bank account number
-                'bc_manager_id/name',                    // 13: Manager name
-                'bc_spv_id/name',                        // 14: Supervisor name
-                'partner_id/contact_address',            // 15: Address (multiline)
-                'partner_id/contact_address_complete',   // 16: Address (single line)
-                'narration',                             // 17: Terms and Condition
-                'partner_id/vat',                        // 18: NPWP
-                'contract_ref',                          // 19: Contract Ref
-                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 20: Path A: Contract from Line
-                'rental_period_id/rental_order_id/rental_contract_id/name', // 21: Path B: Contract from Period
-                'invoice_date_due',                      // 22: Due date
-                'invoice_line_ids/duration_price',       // 23: Duration Price
-                'partner_id/.id',                        // 24: Partner ID for address enrichment
+                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
+                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
+                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
+                'partner_bank_id/acc_number', 'bc_manager_id/name', 'bc_spv_id/name',
+                'partner_id/contact_address', 'partner_id/contact_address_complete',
+                'narration', 'partner_id/vat', 'contract_ref',
+                'invoice_line_ids/sale_order_id/rental_contract_id/name',
+                'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id'
             ];
 
             $entries = [];
@@ -494,20 +456,13 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-
-                if (!isset($result['datas'])) {
-                    continue;
-                }
+                if (!isset($result['datas'])) continue;
 
                 $currentEntry = null;
-
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
-
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) {
-                            $entries[] = $currentEntry;
-                        }
+                        if ($currentEntry !== null) $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -539,11 +494,8 @@ class OdooService
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             if (empty($currentEntry['contract_ref'])) {
-                                if (!empty($row[20])) {
-                                    $currentEntry['contract_ref'] = $row[20];
-                                } elseif (!empty($row[21])) {
-                                    $currentEntry['contract_ref'] = $row[21];
-                                }
+                                if (!empty($row[20])) $currentEntry['contract_ref'] = $row[20];
+                                elseif (!empty($row[21])) $currentEntry['contract_ref'] = $row[21];
                             }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
@@ -554,29 +506,28 @@ class OdooService
                         }
                     }
                 }
-
-                if ($currentEntry !== null) {
-                    $entries[] = $currentEntry;
-                }
+                if ($currentEntry !== null) $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
-
-            return [
-                'success' => true,
-                'data' => $entries,
-                'count' => count($entries),
-            ];
+            return ['success' => true, 'data' => $entries];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+            return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public function fetchInvoiceOthers(string $dateFrom, string $dateTo): array
+    {
+        $res = $this->getInvoiceOtherIds($dateFrom, $dateTo);
+        if (!$res['success']) return $res;
+        return $this->fetchInvoiceOthersByIds($res['ids']);
     }
 
     /**
      * Fetch Invoice Vehicle (Penjualan Kendaraan) entries from Odoo using export_data
      * Journal: Invoice Penjualan Kendaraan (INVCR)
      */
-    public function fetchInvoiceVehicles(string $dateFrom, string $dateTo): array
+    public function getInvoiceVehicleIds(string $dateFrom, string $dateTo): array
     {
         try {
             $domain = [
@@ -585,41 +536,29 @@ class OdooService
                 ['invoice_date', '>=', $dateFrom],
                 ['invoice_date', '<=', $dateTo],
             ];
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
+    }
 
-            $moveIds = $this->execute('account.move', 'search', [$domain]);
-
-            if (empty($moveIds)) {
-                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice vehicle entries found.'];
-            }
+    public function fetchInvoiceVehiclesByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name',                                  // 0: Invoice number (INVCR/...)
-                'partner_id/name',                       // 1: Customer name
-                'invoice_date',                          // 2: Invoice date
-                'invoice_payment_term_id/name',          // 3: Payment terms
-                'ref',                                   // 4: Customer Reference
-                'journal_id/name',                       // 5: Journal name
-                'amount_untaxed',                        // 6: Subtotal
-                'amount_tax',                            // 7: Tax
-                'amount_total',                          // 8: Total
-                'invoice_line_ids/name',                 // 9: Line description
-                'invoice_line_ids/quantity',              // 10: Line qty
-                'invoice_line_ids/price_unit',           // 11: Line unit price
-                'partner_bank_id/acc_number',            // 12: Bank account number
-                'bc_manager_id/name',                    // 13: Manager name
-                'bc_spv_id/name',                        // 14: Supervisor name
-                'partner_id/contact_address',            // 15: Address (multiline)
-                'partner_id/contact_address_complete',   // 16: Address (single line)
-                'invoice_line_ids/product_id/name',      // 17: Product name (vehicle model)
-                'invoice_line_ids/serial_ids/name',         // 18: Serial = No Polisi
-                'partner_id/vat',                        // 19: NPWP
-                'narration',                             // 20: Terms and Condition
-                'contract_ref',                          // 21: Contract Ref
-                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 22: Path A: Contract from Line
-                'rental_period_id/rental_order_id/rental_contract_id/name', // 23: Path B: Contract from Period
-                'invoice_date_due',                      // 24: Due date
-                'invoice_line_ids/duration_price',       // 25: Duration Price
-                'partner_id/.id',                        // 26: Partner ID for address enrichment
+                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
+                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
+                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
+                'partner_bank_id/acc_number', 'bc_manager_id/name', 'bc_spv_id/name',
+                'partner_id/contact_address', 'partner_id/contact_address_complete',
+                'invoice_line_ids/product_id/name', 'invoice_line_ids/serial_ids/name',
+                'partner_id/vat', 'narration', 'contract_ref',
+                'invoice_line_ids/sale_order_id/rental_contract_id/name',
+                'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id'
             ];
 
             $entries = [];
@@ -628,20 +567,13 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-
-                if (!isset($result['datas'])) {
-                    continue;
-                }
+                if (!isset($result['datas'])) continue;
 
                 $currentEntry = null;
-
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
-
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) {
-                            $entries[] = $currentEntry;
-                        }
+                        if ($currentEntry !== null) $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -649,7 +581,7 @@ class OdooService
                             'invoice_date_due' => $row[24] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
-                            'journal_name' => $row[5] ?? 'Invoice Penjualan Kendaraan',
+                            'journal_name' => $row[5] ?? '',
                             'amount_untaxed' => (float)($row[6] ?? 0),
                             'amount_tax' => (float)($row[7] ?? 0),
                             'amount_total' => (float)($row[8] ?? 0),
@@ -672,9 +604,6 @@ class OdooService
                         $linePrice = (float)($row[11] ?? 0);
                         $productName = $row[17] ?? '';
                         $licensePlate = $row[18] ?? '';
-
-                        // Extract serial/VIN from description if available
-                        // Description typically contains: "Penjualan Kend.MHKM5FA4JLK062083"
                         $serialNumber = '';
                         if (preg_match('/Kend\.?\s*([A-Z0-9]+)/i', $lineDesc, $matches)) {
                             $serialNumber = $matches[1];
@@ -682,11 +611,8 @@ class OdooService
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             if (empty($currentEntry['contract_ref'])) {
-                                if (!empty($row[22])) {
-                                    $currentEntry['contract_ref'] = $row[22];
-                                } elseif (!empty($row[23])) {
-                                    $currentEntry['contract_ref'] = $row[23];
-                                }
+                                if (!empty($row[22])) $currentEntry['contract_ref'] = $row[22];
+                                elseif (!empty($row[23])) $currentEntry['contract_ref'] = $row[23];
                             }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
@@ -700,22 +626,21 @@ class OdooService
                         }
                     }
                 }
-
-                if ($currentEntry !== null) {
-                    $entries[] = $currentEntry;
-                }
+                if ($currentEntry !== null) $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
-
-            return [
-                'success' => true,
-                'data' => $entries,
-                'count' => count($entries),
-            ];
+            return ['success' => true, 'data' => $entries];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+            return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public function fetchInvoiceVehicles(string $dateFrom, string $dateTo): array
+    {
+        $res = $this->getInvoiceVehicleIds($dateFrom, $dateTo);
+        if (!$res['success']) return $res;
+        return $this->fetchInvoiceVehiclesByIds($res['ids']);
     }
 
     /**
@@ -868,60 +793,44 @@ class OdooService
      * Fetch Invoice Rental entries from Odoo using export_data
      * Fetches both "Invoice Sewa Retail" and "Invoice Sewa Subscription" journals
      */
-    public function fetchInvoiceRentals(string $dateFrom, string $dateTo): array
+    public function getInvoiceRentalIds(string $dateFrom, string $dateTo): array
     {
         try {
-            // Search account.move where journal is Invoice Sewa... and state is posted
             $domain = [
                 ['state', '=', 'posted'],
                 ['journal_id.name', 'in', ['Invoice Sewa Retail', 'Invoice Sewa Subscription']],
                 ['invoice_date', '>=', $dateFrom],
                 ['invoice_date', '<=', $dateTo],
             ];
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
+    }
 
-            $moveIds = $this->execute('account.move', 'search', [$domain]);
+    public function fetchInvoiceRentalsByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) return ['success' => true, 'data' => []];
 
-            if (empty($moveIds)) {
-                return ['success' => true, 'data' => [], 'count' => 0, 'message' => 'No invoice rental entries found.'];
-            }
-
-            // Exactly matching the Excel columns provided:
             $exportFields = [
-                'name',                                                   // 0: Invoice number (INVRS/... or INVRT/...)
-                'partner_id/name',                                        // 1: Customer name
-                'invoice_date',                                           // 2: Invoice date
-                'invoice_payment_term_id/name',                           // 3: Payment terms
-                'ref',                                                    // 4: Reference
-                'journal_id/name',                                        // 5: Journal name
-                'amount_untaxed',                                         // 6: Subtotal
-                'amount_tax',                                             // 7: Tax
-                'amount_total',                                           // 8: Total
-                'invoice_line_ids/sale_order_id/name',                       // 9: Sale order id name
-                'invoice_line_ids/name',                                  // 10: Line description
-                'invoice_line_ids/serial_ids/name',                       // 11: Serial number
-                'invoice_line_ids/start_rental_period',                      // 12: Actual start rental
-                'invoice_line_ids/end_rental_period',                        // 13: Actual end rental
-                'invoice_line_ids/sale_order_id/rental_uom',                 // 14: Rental uom
-                'invoice_line_ids/quantity',                               // 15: Quantity
-                'invoice_line_ids/price_unit',                             // 16: Price unit
-                'invoice_line_ids/sale_order_id/customer_name',              // 17: Customer Name (username)
-                'partner_bank_id/acc_number',                             // 18: Bank account number
-                'bc_manager_id/name',                                     // 19: Manager name
-                'bc_spv_id/name',                                         // 20: Supervisor name
-                'partner_id/contact_address',                             // 21: Address (multiline)
-                'partner_id/contact_address_complete',                    // 22: Address (single line)
-                'narration',                                              // 23: Terms and Condition
-                'invoice_line_ids/sale_order_id/rental_contract_id/name', // 24: Path A: Contract from Line
-                'rental_period_id/rental_order_id/rental_contract_id/name', // 25: Path B: Contract from Period
-                'invoice_date_due',                                       // 26: Due date
-                'partner_id/vat',                                         // 27: NPWP
-                'invoice_line_ids/rental_qty',                            // 28: Rental Qty
-                'invoice_line_ids/rental_uom',                            // 29: Rental UOM (from line directly)
-                'invoice_line_ids/duration_price',                        // 30: Duration Price
-                'invoice_line_ids/product_id/name',                       // 31: Product Name
-                'invoice_line_ids/sale_order_id/actual_start_rental',     // 32: Actual Start (with time)
-                'invoice_line_ids/sale_order_id/actual_end_rental',       // 33: Actual End (with time)
-                'partner_id/.id',                                         // 34: Partner ID for enrichment
+                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
+                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
+                'invoice_line_ids/sale_order_id/name', 'invoice_line_ids/name',
+                'invoice_line_ids/serial_ids/name', 'invoice_line_ids/start_rental_period',
+                'invoice_line_ids/end_rental_period', 'invoice_line_ids/sale_order_id/rental_uom',
+                'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
+                'invoice_line_ids/sale_order_id/customer_name', 'partner_bank_id/acc_number',
+                'bc_manager_id/name', 'bc_spv_id/name', 'partner_id/contact_address',
+                'partner_id/contact_address_complete', 'narration',
+                'invoice_line_ids/sale_order_id/rental_contract_id/name',
+                'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due', 'partner_id/vat', 'invoice_line_ids/rental_qty',
+                'invoice_line_ids/rental_uom', 'invoice_line_ids/duration_price',
+                'invoice_line_ids/product_id/name',
+                'invoice_line_ids/sale_order_id/actual_start_rental',
+                'invoice_line_ids/sale_order_id/actual_end_rental', 'partner_id/.id'
             ];
 
             $entries = [];
@@ -930,20 +839,13 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-
-                if (!isset($result['datas'])) {
-                    continue;
-                }
+                if (!isset($result['datas'])) continue;
 
                 $currentEntry = null;
-
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
-
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) {
-                            $entries[] = $currentEntry;
-                        }
+                        if ($currentEntry !== null) $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -951,18 +853,18 @@ class OdooService
                             'invoice_date_due' => $row[26] ?? '',
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
-                            'journal_name' => $row[5] ?? 'Invoice Rental',
+                            'journal_name' => $row[5] ?? '',
                             'amount_untaxed' => (float)($row[6] ?? 0),
                             'amount_tax' => (float)($row[7] ?? 0),
                             'amount_total' => (float)($row[8] ?? 0),
-                            'partner_bank' => $row[18] ?? '',
-                            'manager_name' => $row[19] ?? '',
-                            'spv_name' => $row[20] ?? '',
+                            'bank_account' => $row[18] ?? '',
+                            'bc_manager' => $row[19] ?? '',
+                            'bc_spv' => $row[20] ?? '',
                             'partner_address' => $row[21] ?? '',
                             'partner_address_complete' => $row[22] ?? '',
-                            'narration' => $row[23] ?? '',
-                            'contract_ref' => !empty($row[24]) ? $row[24] : ($row[25] ?? ''),
                             'partner_npwp' => $row[27] ?? '',
+                            'terms' => $row[23] ?? '',
+                            'contract_ref' => $row[24] ?? $row[25] ?? '',
                             'partner_id_odoo' => $row[34] ?? null,
                             'lines' => [],
                         ];
@@ -974,11 +876,11 @@ class OdooService
                         $serialNum = $row[11] ?? '';
                         $actualStart = $row[12] ?? '';
                         $actualEnd = $row[13] ?? '';
-                        $uom = !empty($row[29]) ? $row[29] : ($row[14] ?? '');
+                        $uom = $row[14] ?? $row[29] ?? '';
                         $qty = (float)($row[15] ?? 0);
-                        $rentalQty = (float)($row[28] ?? 0);
                         $priceUnit = (float)($row[16] ?? 0);
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
+                        $rentalQty = (float)($row[28] ?? 0);
                         $productName = $row[31] ?? '';
 
                         // Pull exact time from Rental Order only for INVRT (Retail). 
@@ -989,7 +891,7 @@ class OdooService
                         }
 
                         // Prepend product name to description if it's not already there, so we can filter by it
-                        if (!empty($productName) && !str_contains(strtolower($lineDesc), strtolower($productName))) {
+                        if (!empty($productName) && !empty($lineDesc) && !str_contains(strtolower($lineDesc), strtolower($productName))) {
                             // If it's something like "Lain-Lain (inv)", we format it nicely
                             $lineDesc = $productName . "\n" . $lineDesc;
                         }

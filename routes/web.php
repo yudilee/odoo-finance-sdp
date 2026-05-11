@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
     Route::group(['prefix' => 'invoice-driver', 'as' => 'invoice-driver.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceDriverController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceDriverController::class, 'sync'])->name('sync');
+        Route::post('/sync-ids', [InvoiceDriverController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [InvoiceDriverController::class, 'syncBatch'])->name('sync-batch');
         Route::post('/print-selected', [InvoiceDriverController::class, 'printSelectedPdf'])->name('print-selected');
         Route::post('/print-selected-html', [InvoiceDriverController::class, 'printSelectedHtml'])->name('print-selected-html');
         Route::get('/{invoice}', [InvoiceDriverController::class, 'show'])->name('show');
@@ -81,6 +83,8 @@ Route::middleware('auth')->group(function () {
     Route::group(['prefix' => 'invoice-other', 'as' => 'invoice-other.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceOtherController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceOtherController::class, 'sync'])->name('sync');
+        Route::post('/sync-ids', [InvoiceOtherController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [InvoiceOtherController::class, 'syncBatch'])->name('sync-batch');
         Route::post('/print-selected', [InvoiceOtherController::class, 'printSelectedPdf'])->name('print-selected');
         Route::post('/print-selected-html', [InvoiceOtherController::class, 'printSelectedHtml'])->name('print-selected-html');
         Route::get('/{invoice}', [InvoiceOtherController::class, 'show'])->name('show');
@@ -94,6 +98,8 @@ Route::middleware('auth')->group(function () {
     Route::group(['prefix' => 'invoice-rental', 'as' => 'invoice-rental.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceRentalController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceRentalController::class, 'sync'])->name('sync');
+        Route::post('/sync-ids', [InvoiceRentalController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [InvoiceRentalController::class, 'syncBatch'])->name('sync-batch');
         Route::post('/print-selected', [InvoiceRentalController::class, 'printSelectedPdf'])->name('print-selected');
         Route::post('/print-selected-html', [InvoiceRentalController::class, 'printSelectedHtml'])->name('print-selected-html');
         Route::get('/{invoice}', [InvoiceRentalController::class, 'show'])->name('show');
@@ -107,6 +113,8 @@ Route::middleware('auth')->group(function () {
     Route::group(['prefix' => 'invoice-vehicle', 'as' => 'invoice-vehicle.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceVehicleController::class, 'index'])->name('index');
         Route::post('/sync', [InvoiceVehicleController::class, 'sync'])->name('sync');
+        Route::post('/sync-ids', [InvoiceVehicleController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [InvoiceVehicleController::class, 'syncBatch'])->name('sync-batch');
         Route::post('/print-selected', [InvoiceVehicleController::class, 'printSelectedPdf'])->name('print-selected');
         Route::post('/print-selected-html', [InvoiceVehicleController::class, 'printSelectedHtml'])->name('print-selected-html');
         Route::get('/{invoice}', [InvoiceVehicleController::class, 'show'])->name('show');
