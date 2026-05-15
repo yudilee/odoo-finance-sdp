@@ -17,6 +17,56 @@
         </form>
     </div>
 
+    {{-- Backup Schedule --}}
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Automatic Backup Schedule</h3>
+            <div class="flex items-center gap-2">
+                <span class="text-xs {{ $schedule->enabled ? 'text-emerald-500' : 'text-slate-500' }} font-medium">
+                    {{ $schedule->enabled ? 'Active' : 'Disabled' }}
+                </span>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ route('admin.backups.schedule') }}" class="space-y-4">
+            @csrf
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Enable Schedule</label>
+                    <select name="enabled" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
+                        <option value="1" {{ $schedule->enabled ? 'selected' : '' }}>Yes, enable auto-backup</option>
+                        <option value="0" {{ !$schedule->enabled ? 'selected' : '' }}>No, disable auto-backup</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Frequency</label>
+                    <select name="frequency" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
+                        <option value="daily" {{ $schedule->frequency === 'daily' ? 'selected' : '' }}>Daily</option>
+                        <option value="weekly" {{ $schedule->frequency === 'weekly' ? 'selected' : '' }}>Weekly</option>
+                        <option value="monthly" {{ $schedule->frequency === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Backup Time</label>
+                    <input type="time" name="time" value="{{ $schedule->time }}" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="prune_enabled" value="1" {{ $schedule->prune_enabled ? 'checked' : '' }} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Auto-delete old backups</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="px-6 py-2 bg-slate-800 dark:bg-slate-700 text-white text-sm font-medium rounded-lg hover:bg-slate-900 dark:hover:bg-slate-600 transition-colors">Save Schedule</button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2 italic">* Requires system scheduler (cron) to be running on the server.</p>
+            </div>
+        </form>
+    </div>
+
     {{-- Restore from File --}}
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
         <h3 class="text-lg font-semibold mb-4">Restore from File</h3>

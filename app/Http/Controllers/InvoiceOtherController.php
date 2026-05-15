@@ -72,35 +72,37 @@ class InvoiceOtherController extends Controller
         $invoices = $query->paginate($perPage)->withQueryString();
 
         // Summary stats (apply same filters)
-        $statsQuery = InvoiceOther::query();
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $statsQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('partner_name', 'like', "%{$search}%")
-                  ->orWhere('ref', 'like', "%{$search}%");
+        $statsQuery = InvoiceOther::query()
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->search;
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('partner_name', 'like', "%{$search}%")
+                        ->orWhere('ref', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('type'), function ($q) use ($request) {
+                if ($request->type === 'with_tax') {
+                    $q->where('name', 'like', 'INVOT%');
+                } elseif ($request->type === 'without_tax') {
+                    $q->where('name', 'like', 'INVOW%');
+                }
+            })
+            ->when($request->filled('date_from'), function ($q) use ($request) {
+                $q->where('invoice_date', '>=', $request->date_from);
+            })
+            ->when($request->filled('date_to'), function ($q) use ($request) {
+                $q->where('invoice_date', '<=', $request->date_to);
             });
-        }
-        if ($request->filled('type')) {
-            if ($request->type === 'with_tax') {
-                $statsQuery->where('name', 'like', 'INVOT%');
-            } elseif ($request->type === 'without_tax') {
-                $statsQuery->where('name', 'like', 'INVOW%');
-            }
-        }
-        if ($request->filled('date_from')) {
-            $statsQuery->where('invoice_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $statsQuery->where('invoice_date', '<=', $request->date_to);
-        }
 
-        $stats = [
-            'total_invoices' => $statsQuery->count(),
-            'total_untaxed' => (clone $statsQuery)->sum('amount_untaxed'),
-            'total_tax' => (clone $statsQuery)->sum('amount_tax'),
-            'total_amount' => (clone $statsQuery)->sum('amount_total'),
-        ];
+        $stats = $statsQuery->selectRaw("
+                count(*) as total_invoices,
+                sum(amount_untaxed) as total_untaxed,
+                sum(amount_tax) as total_tax,
+                sum(amount_total) as total_amount
+            ")
+            ->first()
+            ->toArray();
 
         return view('invoice-other.index', compact('invoices', 'stats', 'sort', 'dir', 'perPage'));
     }

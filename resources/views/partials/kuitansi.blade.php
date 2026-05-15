@@ -134,8 +134,9 @@
             if ($descLines->count() > 3) {
                 $descArr[] = '...dan ' . ($descLines->count() - 3) . ' item lainnya';
             }
+            $cleanNarration = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $invoice->narration ?? ''));
             $descSummary = empty($descArr)
-                ? ($invoice->narration ?? '-')
+                ? trim($cleanNarration ?: '-')
                 : implode(', ', $descArr);
         }
 

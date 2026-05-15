@@ -31,3 +31,16 @@ Illuminate\Support\Facades\Schedule::command('app:sync-odoo')->when(function () 
         default          => $lastSyncDate->diffInDays($now) >= 1,
     };
 });
+
+// Database Maintenance (Vacuum, Analyze, Prune Logs)
+Illuminate\Support\Facades\Schedule::command('db:maintenance')->dailyAt('03:00')->runInBackground();
+
+// Automatic Database Backups (Linked to UI Settings)
+Illuminate\Support\Facades\Schedule::command('app:backup-db')->when(function () {
+    $schedule = \App\Models\BackupSchedule::first();
+    if (!$schedule || !$schedule->enabled) return false;
+    
+    // Convert current time to H:i to compare with schedule
+    $now = now()->format('H:i');
+    return $now === $schedule->time;
+})->everyMinute()->runInBackground();

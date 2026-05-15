@@ -746,7 +746,8 @@
                                     $narration = trim(str_ireplace(trim($invoice->partner_name), '', $narration));
                                 }
                                 if (!empty($narration)) {
-                                    $catatanContent[] = nl2br(e($narration));
+                                    $cleanNarration = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $narration));
+                                    $catatanContent[] = nl2br(e(trim($cleanNarration)));
                                 }
                             }
                             
@@ -769,7 +770,8 @@
                                         $noteText = trim(str_ireplace(trim($invoice->partner_name), '', $noteText));
                                     }
                                     if (!empty($noteText)) {
-                                        $catatanContent[] = nl2br(e($noteText));
+                                        $cleanNoteText = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $noteText));
+                                        $catatanContent[] = nl2br(e(trim($cleanNoteText)));
                                     }
                                 }
                             }

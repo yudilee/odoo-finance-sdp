@@ -198,11 +198,15 @@ class JournalController extends Controller
             ->pluck('journal_name');
 
         // Summary stats based on filtered query
-        $statsQuery = clone $query;
+        $totalEntries = (clone $query)->count();
+        $lineStats = JournalLine::whereIn('journal_entry_id', (clone $query)->select('id'))
+            ->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')
+            ->first();
+
         $stats = [
-            'total_entries' => $statsQuery->count(),
-            'total_debit' => JournalLine::whereIn('journal_entry_id', (clone $query)->select('id'))->sum('debit'),
-            'total_credit' => JournalLine::whereIn('journal_entry_id', (clone $query)->select('id'))->sum('credit'),
+            'total_entries' => $totalEntries,
+            'total_debit'   => $lineStats->total_debit ?? 0,
+            'total_credit'  => $lineStats->total_credit ?? 0,
         ];
 
         return view('journals.index', compact('entries', 'accountCodes', 'journalNames', 'stats', 'flowType', 'selectedAccounts', 'sort', 'dir', 'perPage'));

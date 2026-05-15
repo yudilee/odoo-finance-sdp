@@ -189,7 +189,10 @@
             <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Catatan</h3>
         </div>
         <div class="p-6 text-sm text-slate-600 dark:text-slate-400">
-            {!! nl2br(e($invoice->narration ?? '')) !!}
+            @php
+                $cleanNarration = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $invoice->narration ?? ''));
+            @endphp
+            {!! nl2br(e(trim($cleanNarration))) !!}
             @if($pphLines->isNotEmpty())
                 @if(!empty($invoice->narration))<br/><br/>@endif
                 @foreach($pphLines as $pphL)

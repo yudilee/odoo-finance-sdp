@@ -138,26 +138,28 @@ class InvoiceSubscriptionController extends Controller
         $records = $query->paginate($perPage)->withQueryString();
 
         // ── Stats (over the whole window, no status/search filters) ──
-        $statsBase = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
-        if ($request->filled('search')) $statsBase->search($request->search);
-        if ($request->filled('date_from')) $statsBase->where('invoice_date', '>=', $request->date_from);
-        if ($request->filled('date_to'))   $statsBase->where('invoice_date', '<=', $request->date_to);
+        $statsQuery = InvoiceSubscription::query()
+            ->where('invoice_amount', '>', 0)
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->search($request->search);
+            })
+            ->when($request->filled('date_from'), function ($q) use ($request) {
+                $q->where('invoice_date', '>=', $request->date_from);
+            })
+            ->when($request->filled('date_to'), function ($q) use ($request) {
+                $q->where('invoice_date', '<=', $request->date_to);
+            });
 
-        $stats = [
-            'total'        => (clone $statsBase)->count(),
-            'not_invoiced' => (clone $statsBase)->where(function ($q) {
-                $q->whereNull('invoice_name')->orWhere('invoice_name', '');
-            })->count(),
-            'overdue'      => (clone $statsBase)->where(function ($q) {
-                $q->whereNull('invoice_name')->orWhere('invoice_name', '');
-            })->where('invoice_date', '<', now()->toDateString())->count(),
-            'draft'        => (clone $statsBase)->whereRaw("LOWER(invoice_state) = 'draft'")->count(),
-            'paid'         => (clone $statsBase)->whereRaw("LOWER(payment_state) = 'paid'")->count(),
-            'unpaid'       => (clone $statsBase)
-                ->whereRaw("LOWER(invoice_state) = 'posted'")
-                ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'")
-                ->count(),
-        ];
+        $stats = $statsQuery->selectRaw("
+                count(*) as total,
+                count(CASE WHEN invoice_name IS NULL OR invoice_name = '' THEN 1 END) as not_invoiced,
+                count(CASE WHEN (invoice_name IS NULL OR invoice_name = '') AND invoice_date < ? THEN 1 END) as overdue,
+                count(CASE WHEN LOWER(invoice_state) = 'draft' THEN 1 END) as draft,
+                count(CASE WHEN LOWER(payment_state) = 'paid' THEN 1 END) as paid,
+                count(CASE WHEN LOWER(invoice_state) = 'posted' AND LOWER(COALESCE(payment_state,'')) != 'paid' THEN 1 END) as unpaid
+            ", [now()->toDateString()])
+            ->first()
+            ->toArray();
 
         // Last sync info
         $lastSync = ImportLog::where('source', 'odoo_subscription_periods')

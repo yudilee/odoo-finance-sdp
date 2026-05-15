@@ -546,7 +546,8 @@
                                     $narration = trim(explode('##', $narration)[0]);
                                 }
                                 if (!empty($narration)) {
-                                    $catatanContent[] = nl2br(e($narration));
+                                    $cleanNarration = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $narration));
+                                    $catatanContent[] = nl2br(e(trim($cleanNarration)));
                                 }
                             }
 
@@ -558,7 +559,8 @@
                                         $noteText = trim(explode('##', $noteText)[0]);
                                     }
                                     if (!empty($noteText)) {
-                                        $catatanContent[] = nl2br(e($noteText));
+                                        $cleanNoteText = strip_tags(str_replace(['<br>', '<br/>', '<br />', '<div>', '<p>', '</p>', '</div>'], ["\n", "\n", "\n", "\n", "\n", "\n", "\n"], $noteText));
+                                        $catatanContent[] = nl2br(e(trim($cleanNoteText)));
                                     }
                                 }
                             }
