@@ -830,7 +830,8 @@ class OdooService
                 'invoice_line_ids/rental_uom', 'invoice_line_ids/duration_price',
                 'invoice_line_ids/product_id/name',
                 'invoice_line_ids/sale_order_id/actual_start_rental',
-                'invoice_line_ids/sale_order_id/actual_end_rental', 'partner_id/.id'
+                'invoice_line_ids/sale_order_id/actual_end_rental', 'partner_id/.id',
+                'contract_ref'
             ];
 
             $entries = [];
@@ -864,7 +865,7 @@ class OdooService
                             'partner_address_complete' => $row[22] ?? '',
                             'partner_npwp' => $row[27] ?? '',
                             'narration' => $row[23] ?? '',
-                            'contract_ref' => $row[24] ?? $row[25] ?? '',
+                            'contract_ref' => !empty($row[35]) ? $row[35] : ($row[24] ?? $row[25] ?? ''),
                             'partner_id_odoo' => $row[34] ?? null,
                             'lines' => [],
                         ];
@@ -898,7 +899,9 @@ class OdooService
 
                         if (!empty($lineDesc) || $qty > 0 || $priceUnit > 0) {
                             if (empty($currentEntry['contract_ref'])) {
-                                if (!empty($row[24])) {
+                                if (!empty($row[35])) {
+                                    $currentEntry['contract_ref'] = $row[35];
+                                } elseif (!empty($row[24])) {
                                     $currentEntry['contract_ref'] = $row[24];
                                 } elseif (!empty($row[25])) {
                                     $currentEntry['contract_ref'] = $row[25];
