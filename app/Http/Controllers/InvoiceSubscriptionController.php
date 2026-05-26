@@ -86,7 +86,11 @@ class InvoiceSubscriptionController extends Controller
         $sort = $request->input('sort', 'invoice_date');
         $dir  = $request->input('dir', 'asc');
 
-        $query = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
+        $query = InvoiceSubscription::query()->where(function ($q) {
+            $q->where('invoice_amount', '>', 0)
+              ->orWhereNull('invoice_name')
+              ->orWhere('invoice_name', '');
+        });
 
         // ── Search ──
         if ($request->filled('search')) {
@@ -139,7 +143,11 @@ class InvoiceSubscriptionController extends Controller
 
         // ── Stats (over the whole window, no status/search filters) ──
         $statsQuery = InvoiceSubscription::query()
-            ->where('invoice_amount', '>', 0)
+            ->where(function ($q) {
+                $q->where('invoice_amount', '>', 0)
+                  ->orWhereNull('invoice_name')
+                  ->orWhere('invoice_name', '');
+            })
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->search($request->search);
             })
@@ -303,7 +311,11 @@ class InvoiceSubscriptionController extends Controller
             ? json_decode($visibleColumnsInput, true) 
             : $visibleColumnsInput;
 
-        $query = InvoiceSubscription::query()->where('invoice_amount', '>', 0);
+        $query = InvoiceSubscription::query()->where(function ($q) {
+            $q->where('invoice_amount', '>', 0)
+              ->orWhereNull('invoice_name')
+              ->orWhere('invoice_name', '');
+        });
         
         if (!empty($ids)) {
             $query->whereIn('id', $ids);

@@ -20,8 +20,6 @@
         }
         .invoice-page {
             page-break-after: always;
-            position: relative;
-            counter-reset: page;
         }
         .invoice-page:last-child {
             page-break-after: auto;
@@ -67,15 +65,6 @@
             font-size: 10px;
             color: #64748b;
             margin-top: 2px;
-            counter-increment: page;
-        }
-        .page-number-counter::after {
-            content: counter(page);
-        }
-        .page-label {
-            text-align: right;
-            font-size: 9px;
-            color: #64748b;
         }
 
         /* Invoice Info */
@@ -112,7 +101,6 @@
 
         /* Lines Table */
         .lines-table {
-            border-bottom: 2px solid #1e293b;
             margin-top: 15px;
         }
         .lines-table th {
@@ -352,6 +340,9 @@
             : \App\Models\Setting::get('default_bc_spv', '');
     @endphp
     <div class="invoice-page" style="{{ $loop->last ? 'page-break-after: auto;' : 'page-break-after: always;' }}">
+        <script type="text/php">
+            $GLOBALS['invoice_starts']['{{ $invoice->name }}'] = $pdf->get_page_number();
+        </script>
         <table class="lines-table">
             <thead>
                 <tr>
@@ -378,13 +369,7 @@
                                 </td>
                                 <td style="width: 40%;">
                                     <div class="invoice-title">INVOICE</div>
-                                    <div class="page-label">Hal : 
-                                        @if(isset($printMode) && $printMode === 'summary')
-                                            1
-                                        @else
-                                            <span class="page-number-counter"></span>
-                                        @endif
-                                    </div>
+                                    <div class="page-label" style="visibility: hidden;">Hal : 1</div>
                                 </td>
                             </tr>
                         </table>
@@ -539,12 +524,14 @@
                 @for($i = count($displayLines); $i < 5; $i++)
                 <tr><td colspan="{{ $showUnitColumn ? 5 : 4 }}" style="height: 18px;"></td></tr>
                 @endfor
-            </tbody>
-        </table>
-
-        <div style="page-break-inside: avoid;">
-            {{-- Payment Terms & Totals --}}
-            <table style="width: 100%; margin-top: 10px;">
+                <tr>
+                    <td colspan="{{ $showUnitColumn ? 5 : 4 }}" style="border-bottom: 2px solid #1e293b; padding: 0; height: 0; line-height: 0;"></td>
+                </tr>
+                <tr style="border: none;">
+                    <td colspan="{{ $showUnitColumn ? 5 : 4 }}" style="border: none; padding: 0;">
+                        <div style="page-break-inside: avoid; width: 100%;">
+                            {{-- Payment Terms & Totals --}}
+                            <table style="width: 100%; margin-top: 10px;">
                 <tr>
                     <td style="width: 55%; vertical-align: top;">
                         <div style="font-size: 10px; margin-bottom: 5px;">
@@ -694,9 +681,34 @@
                     </td>
                 </tr>
             </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     @endforeach
+
+    @if(!isset($printMode) || $printMode !== 'summary')
+    <script type="text/php">
+        if (isset($pdf)) {
+            $pdf->page_script('
+                $starts = $GLOBALS["invoice_starts"] ?? [];
+                asort($starts);
+                $invoiceStartPage = 1;
+                foreach ($starts as $name => $startPage) {
+                    if ($PAGE_NUM >= $startPage) {
+                        $invoiceStartPage = $startPage;
+                    }
+                }
+                $localPageNum = $PAGE_NUM - $invoiceStartPage + 1;
+                $font = $fontMetrics->get_font("helvetica", "normal");
+                $text = "Hal : " . $localPageNum;
+                $pdf->text(524, 47, $text, $font, 9, array(0.39, 0.45, 0.55));
+            ');
+        }
+    </script>
+    @endif
 
     @if(isset($isHtml) && $isHtml)
     <script>

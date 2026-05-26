@@ -20,8 +20,6 @@
         }
         .invoice-page {
             page-break-after: always;
-            position: relative;
-            counter-reset: page;
         }
         .invoice-page:last-child {
             page-break-after: auto;
@@ -100,7 +98,6 @@
         /* Lines Table */
         .lines-table {
             border: none;
-            border-bottom: 2px solid #1e293b;
             margin-top: 0;
         }
         .table-header-row th {
@@ -240,16 +237,15 @@
             font-size: 10px;
             color: #64748b;
             margin-top: 2px;
-            counter-increment: page;
-        }
-        .page-number-counter::after {
-            content: counter(page);
         }
     </style>
 </head>
 <body>
     @foreach($invoices as $invoice)
     <div class="invoice-page" style="{{ $loop->last ? 'page-break-after: auto;' : 'page-break-after: always;' }}">
+        <script type="text/php">
+            $GLOBALS['invoice_starts']['{{ $invoice->name }}'] = $pdf->get_page_number();
+        </script>
         @php
             // Fallback to app settings if Odoo fields are empty
             $managerName = !empty($invoice->manager_name)
@@ -419,13 +415,8 @@
                                 </td>
                                 <td style="width: 40%;">
                                     <div class="invoice-title">INVOICE</div>
-                                    <div class="page-label">
-                                        Hal : 
-                                        @if(isset($printMode) && $printMode === 'summary')
-                                            1
-                                        @else
-                                            <span class="page-number-counter"></span>
-                                        @endif
+                                    <div class="page-label" style="visibility: hidden;">
+                                        Hal : 1
                                     </div>
                                 </td>
                             </tr>
@@ -611,7 +602,7 @@
                                     $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
                                 @endphp
                                 @if($displayQty != 0)
-                                    {{ ($displayQty == (int)$displayQty) ? number_format($displayQty, 0, ',', '.') : rtrim(rtrim(number_format($displayQty, 4, ',', '.'), '0'), ',') }} {{ $uomIndo }}
+                                    {{ ($displayQty == (int)$displayQty) ? number_format($displayQty, 0, '.', ',') : rtrim(rtrim(number_format($displayQty, 4, '.', ','), '0'), '.') }} {{ $uomIndo }}
                                 @endif
                             @endif
                         @endif
@@ -639,11 +630,13 @@
                 @for($i = count($displayLines); $i < 5; $i++)
                 <tr><td colspan="5" style="height: 18px;"></td></tr>
                 @endfor
-            </tbody>
-        </table>
-
-        <div style="page-break-inside: avoid;">
-            <table style="width: 100%; margin-top: 10px;">
+                <tr>
+                    <td colspan="5" style="border-bottom: 2px solid #1e293b; padding: 0; height: 0; line-height: 0;"></td>
+                </tr>
+                <tr style="border: none;">
+                    <td colspan="5" style="border: none; padding: 0;">
+                        <div style="page-break-inside: avoid; width: 100%;">
+                            <table style="width: 100%; margin-top: 10px;">
                 <tr>
                     <td style="width: 55%; vertical-align: top;">
                         <div style="font-size: 10px; margin-bottom: 5px;">
@@ -796,8 +789,34 @@
                     </td>
                 </tr>
             </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>@endforeach
+
+    @if(!isset($printMode) || $printMode !== 'summary')
+    <script type="text/php">
+        if (isset($pdf)) {
+            $pdf->page_script('
+                $starts = $GLOBALS["invoice_starts"] ?? [];
+                asort($starts);
+                $invoiceStartPage = 1;
+                foreach ($starts as $name => $startPage) {
+                    if ($PAGE_NUM >= $startPage) {
+                        $invoiceStartPage = $startPage;
+                    }
+                }
+                $localPageNum = $PAGE_NUM - $invoiceStartPage + 1;
+                $font = $fontMetrics->get_font("helvetica", "normal");
+                $text = "Hal : " . $localPageNum;
+                $pdf->text(524, 47, $text, $font, 9, array(0.39, 0.45, 0.55));
+            ');
+        }
+    </script>
+    @endif
+
     @if(isset($isHtml) && $isHtml)
     <script>
         window.onload = function() {
