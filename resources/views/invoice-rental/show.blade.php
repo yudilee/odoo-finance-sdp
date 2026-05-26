@@ -163,7 +163,7 @@
                                     ];
                                     $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;
                                 @endphp
-                                {{ $displayQty > 0 ? number_format($displayQty, 0) : '-' }} {{ $uomIndo }}
+                                {{ $displayQty > 0 ? (($displayQty == (int)$displayQty) ? number_format($displayQty, 0, ',', '.') : rtrim(rtrim(number_format($displayQty, 4, ',', '.'), '0'), ',')) : '-' }} {{ $uomIndo }}
                             @else
                                 -
                             @endif

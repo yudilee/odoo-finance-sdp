@@ -495,7 +495,7 @@
                                         $displayQty = ($line->rental_qty > 0) ? $line->rental_qty : $line->quantity;
                                     @endphp
                                     @if($displayQty > 0)
-                                        {{ number_format($displayQty, 0) }} Org.
+                                        {{ ($displayQty == (int)$displayQty) ? number_format($displayQty, 0, ',', '.') : rtrim(rtrim(number_format($displayQty, 4, ',', '.'), '0'), ',') }} Org.
                                     @endif
                                 @endif
                             </td>
