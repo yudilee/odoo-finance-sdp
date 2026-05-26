@@ -130,7 +130,7 @@
                         @php
                             $displayQty = ($line->rental_qty > 0) ? $line->rental_qty : $line->quantity;
                         @endphp
-                        <td class="px-4 py-3 text-center font-mono text-xs">{{ $displayQty > 0 ? (($displayQty == (int)$displayQty) ? number_format($displayQty, 0, ',', '.') : rtrim(rtrim(number_format($displayQty, 4, ',', '.'), '0'), ',')) : '-' }}</td>
+                        <td class="px-4 py-3 text-center font-mono text-xs">{{ $displayQty > 0 ? (($displayQty == (int)$displayQty) ? number_format($displayQty, 0, '.', ',') : rtrim(rtrim(number_format($displayQty, 4, '.', ','), '0'), '.')) : '-' }}</td>
                         <td class="px-4 py-3 text-right font-mono text-xs">{{ $line->price_unit != 0 ? 'Rp ' . number_format($line->price_unit, 0, ',', '.') : '-' }}</td>
                         <td class="px-4 py-3 text-right font-mono text-xs font-semibold">
                             @if($line->quantity != 0 && $line->price_unit != 0)
