@@ -5,7 +5,7 @@
     <title>Invoice Other</title>
     <style>
         @page {
-            margin: 30px 40px;
+            margin: 30px 40px 60px 40px;
         }
         body {
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -241,7 +241,8 @@
         /* Footer */
         .footer {
             position: fixed;
-            bottom: -20px;
+            bottom: -40px;
+            height: 30px;
             left: 0;
             right: 0;
             font-size: 11px;
@@ -462,6 +463,11 @@
                     @endif
                 </tr>
             </thead>
+            <tfoot>
+                <tr>
+                    <td colspan="{{ $showUnitColumn ? 5 : 4 }}" style="border: none; padding: 0; height: 50px;"></td>
+                </tr>
+            </tfoot>
             <tbody>
                 @php
                     $displayLines = collect();
