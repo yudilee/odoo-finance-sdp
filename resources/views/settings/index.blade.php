@@ -175,6 +175,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Interval</label>
                             <select x-model="schedule.interval" :disabled="!schedule.enabled" class="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-violet-500 focus:border-violet-500 transition disabled:opacity-50">
+                                <option value="every_30_minutes">Every 30 Minutes</option>
                                 <option value="hourly">Every Hour</option>
                                 <option value="every_2_hours">Every 2 Hours</option>
                                 <option value="every_4_hours">Every 4 Hours</option>

@@ -125,6 +125,12 @@
         <div class="flex flex-wrap items-end gap-4">
             <form method="GET" action="{{ route('invoice-subscription.accounting-report') }}" class="flex flex-wrap items-end gap-4 m-0">
             
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Invoice #, customer, NPWP..."
+                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+            </div>
+
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Date From</label>
                 <input type="date" name="date_from" value="{{ $dateFrom }}"
@@ -162,6 +168,7 @@
                             @csrf
                             <input type="hidden" name="date_from" value="{{ $dateFrom }}">
                             <input type="hidden" name="date_to" value="{{ $dateTo }}">
+                            <input type="hidden" name="search" value="{{ $search ?? '' }}">
                             <button type="submit" name="format" value="excel" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 flex items-center gap-2">
                                 <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,20H14L12,16.6L10,20H8.2L11,15.5L8.2,11H10L12,14.4L14,11H15.8L13,15.5L15.8,20M13,9V3.5L18.5,9H13Z"/></svg>
                                 Excel (.xls)

@@ -515,10 +515,11 @@ class InvoiceSubscriptionController extends Controller
     {
         $dateFrom = $request->input('date_from') ?: \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
         $dateTo = $request->input('date_to') ?: \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
+        $search = $request->input('search');
 
-        $records = $this->getAccountingReportData($dateFrom, $dateTo);
+        $records = $this->getAccountingReportData($dateFrom, $dateTo, $search);
 
-        return view('invoice-subscription.accounting-report', compact('records', 'dateFrom', 'dateTo'));
+        return view('invoice-subscription.accounting-report', compact('records', 'dateFrom', 'dateTo', 'search'));
     }
 
     /**
@@ -528,9 +529,10 @@ class InvoiceSubscriptionController extends Controller
     {
         $dateFrom = $request->input('date_from') ?: \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
         $dateTo = $request->input('date_to') ?: \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
+        $search = $request->input('search');
         $format = $request->input('format', 'excel');
 
-        $records = $this->getAccountingReportData($dateFrom, $dateTo);
+        $records = $this->getAccountingReportData($dateFrom, $dateTo, $search);
 
         $filename = 'Accounting_Report_' . $dateFrom . '_to_' . $dateTo;
 
@@ -624,12 +626,33 @@ class InvoiceSubscriptionController extends Controller
     /**
      * Helper to fetch and consolidate data for Accounting Report
      */
-    private function getAccountingReportData($dateFrom, $dateTo)
+    private function getAccountingReportData($dateFrom, $dateTo, $search = null)
     {
-        $rentals = InvoiceRental::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo])->get();
-        $drivers = InvoiceDriver::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo])->get();
-        $others = InvoiceOther::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo])->get();
-        $vehicles = InvoiceVehicle::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo])->get();
+        $applySearch = function($query) use ($search) {
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('partner_name', 'like', "%{$search}%")
+                      ->orWhere('partner_npwp', 'like', "%{$search}%");
+                });
+            }
+        };
+
+        $rentalsQuery = InvoiceRental::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        $applySearch($rentalsQuery);
+        $rentals = $rentalsQuery->get();
+
+        $driversQuery = InvoiceDriver::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        $applySearch($driversQuery);
+        $drivers = $driversQuery->get();
+
+        $othersQuery = InvoiceOther::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        $applySearch($othersQuery);
+        $others = $othersQuery->get();
+
+        $vehiclesQuery = InvoiceVehicle::with('lines')->whereBetween('invoice_date', [$dateFrom, $dateTo]);
+        $applySearch($vehiclesQuery);
+        $vehicles = $vehiclesQuery->get();
 
         // Preload subscription codes for quick lookup
         $subscriptionCodes = InvoiceSubscription::whereNotNull('transaction_code')

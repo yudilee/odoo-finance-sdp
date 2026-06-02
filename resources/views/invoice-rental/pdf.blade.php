@@ -371,6 +371,30 @@
                 }
             }
 
+            if (str_starts_with($invoice->name, 'RINVRS') && $displayLines->isEmpty()) {
+                $originalInvoice = '';
+                if (preg_match('/(INV[A-Z]+\/\d{4}\/\d{5})/', $invoice->ref ?? '', $m)) {
+                    $originalInvoice = $m[1];
+                } else {
+                    $originalInvoice = $invoice->ref ?? '';
+                }
+
+                $displayLines->push((object)[
+                    'clean_description' => $originalInvoice,
+                    'description' => $originalInvoice,
+                    'serial_number' => '-',
+                    'customer_name' => '',
+                    'is_summary' => false,
+                    'quantity' => 1,
+                    'uom' => '',
+                    'price_unit' => $invoice->amount_untaxed,
+                    'amount' => $invoice->amount_untaxed,
+                    'is_rinvrs_line' => true,
+                    'actual_start' => null,
+                    'actual_end' => null,
+                ]);
+            }
+
             $rentalSubtotal = $invoice->amount_untaxed;
             $discountTotal = $discountLines->sum(fn($l) => $l->quantity * $l->price_unit ?: $l->price_unit);
             
@@ -417,7 +441,7 @@
                                     </span>
                                 </td>
                                 <td style="width: 40%;">
-                                    <div class="invoice-title">INVOICE</div>
+                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'RINVRS') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
                                     <div class="page-label" style="visibility: hidden;">
                                         Hal : 1
                                     </div>
@@ -468,7 +492,7 @@
                                         <tr>
                                             <td class="info-label">No. PO</td>
                                             <td class="info-colon">:</td>
-                                            <td>{{ $invoice->ref ?? '' }}</td>
+                                            <td>{{ str_starts_with($invoice->name, 'RINVRS') ? '' : ($invoice->ref ?? '') }}</td>
                                         </tr>
                                         <tr>
                                             <td class="info-label">Payment Terms</td>
@@ -498,7 +522,7 @@
                 </tr>
             </thead>
             <tbody>
-                @if(isset($printMode) && $printMode === 'detail')
+                @if(isset($printMode) && $printMode === 'detail' && !str_starts_with($invoice->name, 'RINVRS'))
                 <tr>
                     <td></td>
                     <td style="padding-bottom: 2px;">
@@ -558,7 +582,17 @@
                             @endphp
 
                             @if(!$line->is_summary)
-                                @if(strtolower(trim($line->clean_description)) === 'lain-lain')
+                                @if(str_starts_with($invoice->name, 'RINVRS'))
+                                    @php
+                                        $originalInvoice = '';
+                                        if (preg_match('/(INV[A-Z]+\/\d{4}\/\d{5})/', $invoice->ref ?? '', $m)) {
+                                            $originalInvoice = $m[1];
+                                        } else {
+                                            $originalInvoice = $invoice->ref ?? '';
+                                        }
+                                    @endphp
+                                    <span>{{ $originalInvoice }}</span>
+                                @elseif(strtolower(trim($line->clean_description)) === 'lain-lain')
                                     <span>{{ $line->clean_description }}</span>
                                 @elseif(isset($printMode) && $printMode === 'detail')
                                     <table style="width: 100%; border-collapse: collapse;">
@@ -586,9 +620,9 @@
                     @endif
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain')
+                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain' && !isset($line->is_rinvrs_line))
                                 @php
-                                    $displayQty = $line->rental_qty > 0 ? $line->rental_qty : $line->quantity;
+                                    $displayQty = $line->rental_qty ?? $line->quantity ?? 0;
                                     $uomMap = [
                                         'hour' => 'Jam',
                                         'hours' => 'Jam',
@@ -612,9 +646,9 @@
                     </td>
                     <td class="text-right">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain')
+                            @if(strtolower(trim($line->clean_description)) !== 'lain-lain' && !isset($line->is_rinvrs_line))
                                 @php
-                                    $unitPrice = ($line->duration_price > 0) ? $line->duration_price : $line->price_unit;
+                                    $unitPrice = ($line->duration_price ?? 0 > 0) ? $line->duration_price : ($line->price_unit ?? 0);
                                 @endphp
                                 @if(isset($unitPrice) && $unitPrice != 0)
                                     {{ number_format($unitPrice, 0, ',', '.') }}
@@ -731,6 +765,10 @@
                         @php
                             $catatanContent = [];
                             $isSummary = isset($printMode) && $printMode === 'summary';
+
+                            if (str_starts_with($invoice->name, 'RINVRS') && !empty($invoice->ref)) {
+                                $catatanContent[] = nl2br(e(trim($invoice->ref)));
+                            }
                             
                             // Process Narration
                             if (!$isSummary && !empty($invoice->narration)) {

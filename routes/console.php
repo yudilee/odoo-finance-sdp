@@ -22,6 +22,7 @@ Illuminate\Support\Facades\Schedule::command('app:sync-odoo')->when(function () 
     $now = now();
     
     return match($interval) {
+        'every_30_minutes' => $lastSyncDate->diffInMinutes($now) >= 30,
         'hourly'         => $lastSyncDate->diffInHours($now) >= 1,
         'every_2_hours'  => $lastSyncDate->diffInHours($now) >= 2,
         'every_4_hours'  => $lastSyncDate->diffInHours($now) >= 4,
