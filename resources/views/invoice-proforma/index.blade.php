@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Invoice Rental')
-@section('subtitle', 'Invoice Rental entries from Odoo')
+@section('title', 'Proforma (Draft)')
+@section('subtitle', 'Proforma (Draft) entries from Odoo')
 
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -80,7 +80,7 @@
 
         try {
             // Phase 1: Get IDs
-            const idRes = await fetch('{{ route('invoice-rental.sync-ids', [], false) }}', {
+            const idRes = await fetch('{{ route('invoice-proforma.sync-ids', [], false) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +116,7 @@
                 const batch = allIds.slice(i, i + chunkSize);
                 this.syncMessage = `Syncing batch ${Math.floor(i/chunkSize) + 1} (${i + 1} - ${Math.min(i + chunkSize, allIds.length)} of ${allIds.length})...`;
                 
-                const batchRes = await fetch('{{ route('invoice-rental.sync-batch', [], false) }}', {
+                const batchRes = await fetch('{{ route('invoice-proforma.sync-batch', [], false) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -205,7 +205,7 @@
         </div>
 
         <div x-show="filtersOpen" x-cloak x-transition class="p-4 border-t border-slate-200 dark:border-slate-700">
-            <form method="GET" action="{{ route('invoice-rental.index', [], false) }}">
+            <form method="GET" action="{{ route('invoice-proforma.index', [], false) }}">
             <div class="flex flex-wrap items-end gap-3 mb-3">
                 <div class="flex-1 min-w-[180px]">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
@@ -224,7 +224,7 @@
                 </div>
                 <div class="flex gap-2 items-end pb-[2px]">
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">Filter</button>
-                    <a href="{{ route('invoice-rental.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
+                    <a href="{{ route('invoice-proforma.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
                     <button type="button" @click="syncOpen = !syncOpen" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         Sync Odoo
@@ -243,7 +243,7 @@
 
             {{-- Sync Panel --}}
             <div x-show="syncOpen" x-cloak x-transition class="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3">Sync Invoice Rental from Odoo</h3>
+                <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3">Sync Proforma (Draft) from Odoo</h3>
                 <div class="flex flex-wrap items-end gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Date From</label>
@@ -279,7 +279,7 @@
     </div>
 
     {{-- Table --}}
-    <form id="bulkPrintForm" method="POST" action="{{ route('invoice-rental.print-selected', [], false) }}" target="_blank">
+    <form id="bulkPrintForm" method="POST" action="{{ route('invoice-proforma.print-selected', [], false) }}" target="_blank">
         @csrf
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto max-h-[75vh]">
@@ -389,14 +389,14 @@
                         </td>
                         <td x-show="columns.name.visible" class="px-3 py-2 font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             <div class="flex items-center gap-2">
-                                <a href="{{ route('invoice-rental.show', $invoice) }}" class="hover:underline">{{ $invoice->name }}</a>
+                                <a href="{{ route('invoice-proforma.show', $invoice) }}" class="hover:underline">{{ $invoice->name }}</a>
                                 <button type="button" onclick="printRentalInvoiceToHub('{{ $invoice->name }}', 'invoice_rental')" title="Print to Hub" class="text-slate-400 hover:text-emerald-600 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
-                                <button type="button" onclick="printInvoice('{{ $invoice->name }}', '{{ route('invoice-rental.print', $invoice) }}')" title="Print PDF" class="text-slate-400 hover:text-indigo-600 transition-colors">
+                                <button type="button" onclick="printInvoice('{{ $invoice->name }}', '{{ route('invoice-proforma.print', $invoice) }}')" title="Print PDF" class="text-slate-400 hover:text-indigo-600 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 </button>
-                                @include('partials.kuitansi-modal', ['invoice' => $invoice, 'isMainButton' => true])
+
                             </div>
                         </td>
                         <td x-show="columns.date.visible" class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ $invoice->invoice_date->format('Y-m-d') }}</td>
@@ -414,7 +414,7 @@
                         <td :colspan="visibleColumnCount" class="px-4 py-12 text-center">
                             <div class="text-slate-400">
                                 <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <p class="text-lg font-medium">No invoice rental entries found</p>
+                                <p class="text-lg font-medium">No Proforma (Draft) entries found</p>
                                 <p class="text-sm mt-1">Use the <strong>Sync Odoo</strong> button above to import data.</p>
                             </div>
                         </td>
@@ -461,39 +461,11 @@
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-slate-800 text-sm">Invoice with detail Nopol</h4>
-                            <p class="text-[11px] text-slate-500">Standard detailing license plates.</p>
+                            <h4 class="font-bold text-slate-800 text-sm">Invoice Sewa Unit</h4>
+                            <p class="text-[11px] text-slate-500">Standard Invoice Sewa format.</p>
                         </div>
                         <div class="radio-indicator w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center">
                             <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                        </div>
-                    </label>
-
-                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 bg-white border-slate-100 hover:border-slate-200" data-value="detail_username">
-                        <input type="radio" name="print_type" value="detail_username" class="hidden">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="font-bold text-slate-800 text-sm">Invoice with detail and username</h4>
-                            <p class="text-[11px] text-slate-500">Includes driver/operator names.</p>
-                        </div>
-                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center">
-                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
-                        </div>
-                    </label>
-
-                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 bg-white border-slate-100 hover:border-slate-200" data-value="summary">
-                        <input type="radio" name="print_type" value="summary" class="hidden">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="font-bold text-slate-800 text-sm">Invoice with summary only</h4>
-                            <p class="text-[11px] text-slate-500">Compact one-line per item summary.</p>
-                        </div>
-                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center">
-                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
                         </div>
                     </label>
                 </div>
@@ -548,12 +520,12 @@
     }
 
     function printInvoice(name, url) {
-        if (name.startsWith('INVRS')) {
+        if (true) {
             Swal.fire({
                 title: 'Pilih Jenis Cetakan',
                 html: getPrintOptionsHtml('Pilih Jenis Cetakan'),
                 showCancelButton: true,
-                confirmButtonText: 'Preview',
+                confirmButtonText: 'Generate Proforma',
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
                 confirmButtonColor: '#10b981',
@@ -695,7 +667,7 @@
             bulkForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const isHtml = e.submitter && e.submitter.dataset.printType === 'html';
-                const baseActionUrl = isHtml ? "{{ route('invoice-rental.print-selected-html') }}" : "{{ route('invoice-rental.print-selected') }}";
+                const baseActionUrl = isHtml ? "{{ route('invoice-proforma.print-selected-html') }}" : "{{ route('invoice-proforma.print-selected') }}";
                 
                 const hasInvrs = Array.from(document.querySelectorAll('.entry-checkbox:checked')).some(cb => {
                     const row = cb.closest('tr');

@@ -10,6 +10,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceDriverController;
 use App\Http\Controllers\InvoiceOtherController;
 use App\Http\Controllers\InvoiceRentalController;
+use App\Http\Controllers\InvoiceProformaController;
 use App\Http\Controllers\InvoiceVehicleController;
 use App\Http\Controllers\InvoiceSubscriptionController;
 use App\Http\Controllers\PrintLogController;
@@ -107,6 +108,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/html', [InvoiceRentalController::class, 'printHtml'])->name('print-html');
         Route::get('/{invoice}/kuitansi-pdf', [InvoiceRentalController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
         Route::get('/{invoice}/kuitansi-html', [InvoiceRentalController::class, 'kuitansiHtml'])->name('kuitansi-html');
+    });
+
+    // Invoice Proforma (Draft Invoices)
+    Route::group(['prefix' => 'invoice-proforma', 'as' => 'invoice-proforma.', 'middleware' => 'role:invoice'], function () {
+        Route::get('/', [InvoiceProformaController::class, 'index'])->name('index');
+        Route::post('/sync', [InvoiceProformaController::class, 'sync'])->name('sync');
+        Route::post('/sync-ids', [InvoiceProformaController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [InvoiceProformaController::class, 'syncBatch'])->name('sync-batch');
+        Route::post('/print-selected', [InvoiceProformaController::class, 'printSelectedPdf'])->name('print-selected');
+        Route::post('/print-selected-html', [InvoiceProformaController::class, 'printSelectedHtml'])->name('print-selected-html');
+        Route::get('/{invoice}', [InvoiceProformaController::class, 'show'])->name('show');
+        Route::get('/{invoice}/pdf', [InvoiceProformaController::class, 'printPdf'])->name('print');
+        Route::get('/{invoice}/html', [InvoiceProformaController::class, 'printHtml'])->name('print-html');
     });
 
     // Invoice Vehicle (Penjualan Kendaraan)

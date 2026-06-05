@@ -940,7 +940,131 @@ class OdooService
             return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
         }
     }
+    public function getInvoiceProformaIds(string $dateFrom, string $dateTo): array
+    {
+        try {
+            $domain = [
+                ['state', '=', 'draft'],
+                ['move_type', '=', 'out_invoice'],
+                ['invoice_date', '>=', $dateFrom],
+                ['invoice_date', '<=', $dateTo],
+            ];
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
+    }
 
+    public function fetchInvoiceProformasByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) return ['success' => true, 'data' => []];
+
+            $exportFields = [
+                '.id', // Odoo ID (0)
+                'name', // 1
+                'partner_id/name', // 2
+                'invoice_date', // 3
+                'invoice_payment_term_id/name', // 4
+                'ref', // 5
+                'journal_id/name', // 6
+                'amount_untaxed', // 7
+                'amount_tax', // 8
+                'amount_total', // 9
+                'invoice_line_ids/name', // 10
+                'invoice_line_ids/quantity', // 11
+                'invoice_line_ids/price_unit', // 12
+                'partner_bank_id', // 13
+                'bc_manager_id/name', // 14
+                'bc_spv_id/name', // 15
+                'partner_id/contact_address', // 16
+                'partner_id/contact_address_complete', // 17
+                'narration', // 18
+                'partner_id/vat', // 19
+                'contract_ref', // 20
+                'invoice_date_due', // 21
+                'invoice_line_ids/duration_price', // 22
+                'partner_id/.id', // 23
+                'invoice_line_ids/rental_qty', // 24
+                'invoice_line_ids/sale_order_id/name', // 25
+                'invoice_line_ids/serial_ids/name', // 26
+                'invoice_line_ids/product_id/name', // 27
+            ];
+
+            $entries = [];
+            $chunkSize = 500;
+            $moveIdsChunks = array_chunk($moveIds, $chunkSize);
+
+            foreach ($moveIdsChunks as $chunk) {
+                $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
+                if (!isset($result['datas'])) continue;
+
+                $currentEntry = null;
+                foreach ($result['datas'] as $row) {
+                    $odooId = $row[0] ?? '';
+                    if (!empty($odooId)) {
+                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        $currentEntry = [
+                            'odoo_id' => $odooId,
+                            'name' => $row[1] ?? '',
+                            'partner_name' => $row[2] ?? '',
+                            'invoice_date' => $row[3] ?? '',
+                            'payment_term' => $row[4] ?? '',
+                            'ref' => $row[5] ?? '',
+                            'journal_name' => $row[6] ?? '',
+                            'amount_untaxed' => (float)($row[7] ?? 0),
+                            'amount_tax' => (float)($row[8] ?? 0),
+                            'amount_total' => (float)($row[9] ?? 0),
+                            'partner_bank' => $row[13] ?? '',
+                            'manager_name' => $row[14] ?? '',
+                            'spv_name' => $row[15] ?? '',
+                            'partner_address' => $row[16] ?? '',
+                            'partner_address_complete' => $row[17] ?? '',
+                            'narration' => $row[18] ?? '',
+                            'partner_npwp' => $row[19] ?? '',
+                            'contract_ref' => $row[20] ?? '',
+                            'invoice_date_due' => $row[21] ?? '',
+                            'partner_id_odoo' => $row[23] ?? null,
+                            'lines' => [],
+                        ];
+                    }
+
+                    if ($currentEntry !== null) {
+                        $lineDesc = $row[10] ?? '';
+                        $lineQty = (float)($row[11] ?? 0);
+                        $linePrice = (float)($row[12] ?? 0);
+
+                        if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
+                            $currentEntry['lines'][] = [
+                                'description' => $lineDesc,
+                                'quantity' => $lineQty,
+                                'price_unit' => $linePrice,
+                                'duration_price' => (float)($row[22] ?? 0),
+                                'rental_qty' => (float)($row[24] ?? 0),
+                                'sale_order_id' => $row[25] ?? '',
+                                'serial_number' => $row[26] ?? '',
+                                'product_name' => $row[27] ?? '',
+                            ];
+                        }
+                    }
+                }
+                if ($currentEntry !== null) $entries[] = $currentEntry;
+            }
+
+            $this->enrichAddresses($entries);
+            return ['success' => true, 'data' => $entries];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function fetchInvoiceProformas(string $dateFrom, string $dateTo): array
+    {
+        $res = $this->getInvoiceProformaIds($dateFrom, $dateTo);
+        if (!$res['success']) return $res;
+        return $this->fetchInvoiceProformasByIds($res['ids']);
+    }
     /**
      * Authenticate with Odoo and return user ID
      */
