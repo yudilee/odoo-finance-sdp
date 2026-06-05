@@ -196,6 +196,60 @@ class SyncService
     }
 
     /**
+     * Save Invoice Proforma entries
+     */
+    public function saveInvoiceProformas(array $entries): int
+    {
+        $count = 0;
+        foreach ($entries as $entry) {
+            $invoice = \App\Models\InvoiceProforma::updateOrCreate(
+                ['odoo_id' => $entry['odoo_id']],
+                [
+                    'name' => $entry['name'],
+                    'partner_name' => $entry['partner_name'],
+                    'invoice_date' => $entry['invoice_date'] ?: null,
+                    'invoice_date_due' => $entry['invoice_date_due'] ?: null,
+                    'payment_term' => $entry['payment_term'] ?? null,
+                    'ref' => $entry['ref'] ?? null,
+                    'contract_ref' => $entry['contract_ref'] ?? null,
+                    'journal_name' => $entry['journal_name'] ?? 'Proforma',
+                    'amount_untaxed' => $entry['amount_untaxed'],
+                    'amount_tax' => $entry['amount_tax'],
+                    'amount_total' => $entry['amount_total'],
+                    'partner_bank' => $entry['partner_bank'] ?? null,
+                    'bc_manager' => $entry['manager_name'] ?? null,
+                    'bc_spv' => $entry['spv_name'] ?? null,
+                    'partner_address' => $entry['partner_address'] ?? null,
+                    'partner_address_complete' => $entry['partner_address_complete'] ?? null,
+                    'narration' => $entry['narration'] ?? null,
+                    'partner_npwp' => $entry['partner_npwp'] ?? null,
+                ]
+            );
+
+            $invoice->lines()->delete();
+            foreach ($entry['lines'] as $line) {
+                $invoice->lines()->create([
+                    'sale_order_id' => $line['sale_order_id'] ?? null,
+                    'description' => $line['description'],
+                    'serial_number' => $line['serial_number'] ?? null,
+                    'actual_start' => $line['actual_start'] ?? null,
+                    'actual_end' => $line['actual_end'] ?? null,
+                    'uom' => $line['uom'] ?? null,
+                    'quantity' => $line['quantity'],
+                    'rental_qty' => $line['rental_qty'] ?? null,
+                    'price_unit' => $line['price_unit'],
+                    'duration_price' => $line['duration_price'] ?? 0,
+                    'customer_name' => $line['customer_name'] ?? null,
+                    'product_name' => $line['product_name'] ?? null,
+                    'license_plate' => $line['license_plate'] ?? null,
+                ]);
+            }
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
      * Save Invoice Subscription entries.
      * 
      * @param array $entries      The records to save

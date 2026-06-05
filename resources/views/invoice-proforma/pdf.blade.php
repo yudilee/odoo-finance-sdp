@@ -441,7 +441,7 @@
                                     </span>
                                 </td>
                                 <td style="width: 40%;">
-                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'RINVRS') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
+                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'RINVRS') ? 'CREDIT NOTES' : 'PROFORMA INVOICE' }}</div>
                                     <div class="page-label" style="visibility: hidden;">
                                         Hal : 1
                                     </div>
@@ -476,7 +476,7 @@
                                         <tr>
                                             <td class="info-label">Nomor</td>
                                             <td class="info-colon">:</td>
-                                            <td>{{ $invoice->name }}</td>
+                                            <td>{{ $invoice->proforma_number ?? $invoice->name }}</td>
                                         </tr>
                                         <tr>
                                             <td class="info-label">Tanggal</td>

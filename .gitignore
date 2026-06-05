@@ -25,3 +25,11 @@ Thumbs.db
 /brain
 /storage/database.sqlite
 /storage/cacert.pem
+
+# AI Session scratch and debug files
+/scratch_*.php
+/*.pdf
+/invoice_logic_options.md
+/session_log_*.md
+
+test_*.php
