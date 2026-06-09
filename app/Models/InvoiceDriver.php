@@ -26,6 +26,7 @@ class InvoiceDriver extends Model
         'partner_npwp',
         'contract_ref',
         'narration',
+        'invoice_pic',
     ];
 
     protected $casts = [

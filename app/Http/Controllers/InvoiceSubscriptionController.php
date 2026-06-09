@@ -117,6 +117,14 @@ class InvoiceSubscriptionController extends Controller
                     $q->whereNull('invoice_name')->orWhere('invoice_name', '');
                 })->where('invoice_date', '>=', $today),
                 'draft'   => $query->whereRaw("LOWER(invoice_state) = 'draft'"),
+                'uninvoiced' => $query->where(function ($q) use ($today) {
+                    $q->whereRaw("LOWER(invoice_state) = 'draft'")
+                      ->orWhere(function($q2) use ($today) {
+                          $q2->where(function($q3) {
+                              $q3->whereNull('invoice_name')->orWhere('invoice_name', '');
+                          })->where('invoice_date', '>=', $today);
+                      });
+                }),
                 'paid'    => $query->whereRaw("LOWER(payment_state) = 'paid'"),
                 'unpaid'  => $query->whereRaw("LOWER(invoice_state) = 'posted'")
                                    ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'"),
@@ -357,6 +365,14 @@ class InvoiceSubscriptionController extends Controller
                                             $q->whereNull('invoice_name')->orWhere('invoice_name', '');
                                         })->where('invoice_date', '>=', $today),
                     'draft'        => $query->whereRaw("LOWER(invoice_state) = 'draft'"),
+                    'uninvoiced'   => $query->where(function ($q) use ($today) {
+                                            $q->whereRaw("LOWER(invoice_state) = 'draft'")
+                                              ->orWhere(function($q2) use ($today) {
+                                                  $q2->where(function($q3) {
+                                                      $q3->whereNull('invoice_name')->orWhere('invoice_name', '');
+                                                  })->where('invoice_date', '>=', $today);
+                                              });
+                                        }),
                     'paid'         => $query->whereRaw("LOWER(payment_state) = 'paid'"),
                     'unpaid'       => $query->whereRaw("LOWER(invoice_state) = 'posted'")
                                            ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'"),
@@ -391,6 +407,7 @@ class InvoiceSubscriptionController extends Controller
             'not_invoiced_overdue' => 'Not_Invoiced_Overdue',
             'not_invoiced_upcoming' => 'Not_Invoiced_Upcoming',
             'draft' => 'Draft',
+            'uninvoiced' => 'Uninvoiced',
             'paid' => 'Paid',
             'unpaid' => 'Unpaid',
             default => 'All_Status',

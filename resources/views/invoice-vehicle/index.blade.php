@@ -469,24 +469,22 @@
     function printInvoice(name, url) {
         Swal.fire({
             title: 'Pilih Jenis Cetakan',
-            input: 'radio',
-            inputOptions: {
-                'detail': 'Invoice with detail',
-                'summary': 'Invoice with summary only'
-            },
-            inputValue: 'detail',
-            icon: 'question',
+            html: window.buildPrintOptionsHtml(),
             showCancelButton: true,
-            confirmButtonText: 'Print',
+            confirmButtonText: 'Preview',
             cancelButtonText: 'Batal',
             reverseButtons: true,
-            inputValidator: (value) => {
-                if (!value) return 'Anda harus memilih salah satu!';
+            confirmButtonColor: '#10b981',
+            width: '450px',
+            didOpen: () => window.initPrintOptions(),
+            preConfirm: () => {
+                return window.swalSelectedValue;
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                let printUrl = url + '?print_mode=' + result.value + '&show_username=0';
-                window.open(printUrl, '_blank');
+                let htmlUrl = url.replace('/pdf', '/html') + '?print_mode=' + result.value + '&show_username=0';
+                let pdfUrl = url + '?print_mode=' + result.value + '&show_username=0';
+                window.showInvoicePreviewModal(htmlUrl, pdfUrl);
             }
         });
     }
@@ -527,20 +525,15 @@
 
                 Swal.fire({
                     title: 'Pilih Jenis Cetakan (Bulk)',
-                    input: 'radio',
-                    inputOptions: {
-                        'detail': 'Invoice with detail',
-                        'summary': 'Invoice with summary only'
-                    },
-                    inputValue: 'detail',
-                    icon: 'question',
+                    html: window.buildPrintOptionsHtml(true),
                     showCancelButton: true,
                     confirmButtonText: 'Print Selected',
                     cancelButtonText: 'Batal',
                     reverseButtons: true,
-                    inputValidator: (value) => {
-                        if (!value) return 'Anda harus memilih salah satu!';
-                    }
+                    confirmButtonColor: '#10b981',
+                    width: '450px',
+                    didOpen: () => window.initPrintOptions(),
+                    preConfirm: () => window.swalSelectedValue
                 }).then((result) => {
                     if (result.isConfirmed) {
                         let actionUrl = baseActionUrl + '?print_mode=' + result.value + '&show_username=0';
@@ -559,20 +552,15 @@
 
                 Swal.fire({
                     title: 'Pilih Jenis Cetakan (Bulk Hub)',
-                    input: 'radio',
-                    inputOptions: {
-                        'detail': 'Invoice with detail',
-                        'summary': 'Invoice with summary only'
-                    },
-                    inputValue: 'detail',
-                    icon: 'question',
+                    html: window.buildPrintOptionsHtml(true),
                     showCancelButton: true,
                     confirmButtonText: 'Print to Hub',
                     cancelButtonText: 'Batal',
                     reverseButtons: true,
-                    inputValidator: (value) => {
-                        if (!value) return 'Anda harus memilih salah satu!';
-                    }
+                    confirmButtonColor: '#10b981',
+                    width: '450px',
+                    didOpen: () => window.initPrintOptions(),
+                    preConfirm: () => window.swalSelectedValue
                 }).then((result) => {
                     if (result.isConfirmed) {
                         printBulkToHub(docType, ids, result.value, 0);

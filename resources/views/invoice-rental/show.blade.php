@@ -223,6 +223,7 @@
                 inputOptions: {
                     'detail_nopol': 'Invoice with detail Nopol',
                     'detail_username': 'Invoice with detail and username',
+                    'without_nopol': 'Invoice without Nopol',
                     'summary': 'Invoice with summary only'
                 },
                 inputValue: 'detail_nopol',
@@ -246,6 +247,9 @@
                     } else if (result.value === 'summary') {
                         htmlUrl += '?print_mode=summary&show_username=0';
                         pdfUrl += '?print_mode=summary&show_username=0';
+                    } else if (result.value === 'without_nopol') {
+                        htmlUrl += '?print_mode=detail&show_username=0&hide_nopol=1';
+                        pdfUrl += '?print_mode=detail&show_username=0&hide_nopol=1';
                     } else {
                         htmlUrl += '?print_mode=detail&show_username=0';
                         pdfUrl += '?print_mode=detail&show_username=0';

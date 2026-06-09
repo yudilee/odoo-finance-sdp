@@ -248,6 +248,8 @@
     <div class="invoice-page" style="{{ $loop->last ? 'page-break-after: auto;' : 'page-break-after: always;' }}">
         <script type="text/php">
             $GLOBALS['invoice_starts']['{{ $invoice->name }}'] = $pdf->get_page_number();
+            $GLOBALS['invoice_pics']['{{ $invoice->name }}'] = '{{ $invoice->invoice_pic ? strtoupper(substr(trim($invoice->invoice_pic), 0, 3)) : "" }}';
+            $GLOBALS['invoice_prints']['{{ $invoice->name }}'] = '{{ str_pad(($invoice->print_count ?? 0) + 1, 2, "0", STR_PAD_LEFT) }}';
         </script>
         @php
             // Fallback to app settings if Odoo fields are empty
@@ -598,7 +600,7 @@
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
                                             <td style="width: 35%; text-align: left; padding: 0; vertical-align: top;">{{ $productCode }}</td>
-                                            <td style="width: 25%; text-align: center; padding: 0; vertical-align: top;">{{ $line->serial_number ?? '-' }}</td>
+                                            <td style="width: 25%; text-align: center; padding: 0; vertical-align: top;">{{ (isset($hideNopol) && $hideNopol) ? '' : ($line->serial_number ?? '-') }}</td>
                                             <td style="width: 40%; text-align: center; padding: 0; vertical-align: top; white-space: nowrap;">{{ $periodeStr }}</td>
                                         </tr>
                                     </table>
@@ -608,7 +610,7 @@
                                             ? ' Periode: ' . ($periodeStart ? $periodeStart->format('d/m/Y') : '-') . ' s/d ' . ($periodeEnd ? $periodeEnd->format('d/m/Y') : '-')
                                             : '';
                                     @endphp
-                                    <span>{{ $productCode }} {{ $line->serial_number ?? '-' }}{{ $inlinePeriode }}</span>
+                                    <span>{{ $productCode }} {{ (isset($hideNopol) && $hideNopol) ? '' : ($line->serial_number ?? '-') }}{{ $inlinePeriode }}</span>
                                 @endif
                                 @if(isset($showUsername) && $showUsername && $line->customer_name && strtolower(trim($line->clean_description)) !== 'lain-lain')
                                     <div style="color: #475569; font-style: italic; margin-top: 2px;">{{ $line->customer_name }}</div>
@@ -884,8 +886,39 @@
                 }
                 $localPageNum = $PAGE_NUM - $invoiceStartPage + 1;
                 $font = $fontMetrics->get_font("helvetica", "normal");
+                
+                // Print Hal: X
                 $text = "Hal : " . $localPageNum;
                 $pdf->text(524, 47, $text, $font, 9, array(0.39, 0.45, 0.55));
+                
+                // Print PIC Watermark
+                $currentInvoiceName = null;
+                foreach ($starts as $name => $startPage) {
+                    if ($PAGE_NUM >= $startPage) {
+                        $currentInvoiceName = $name;
+                    }
+                }
+                if ($currentInvoiceName) {
+                    $pic = $GLOBALS["invoice_pics"][$currentInvoiceName] ?? "";
+                    if (!empty($pic)) {
+                        $print = $GLOBALS["invoice_prints"][$currentInvoiceName] ?? "01";
+                        $date = date("dmy");
+                        $watermarkText = $pic . "/" . $date . "/" . $print;
+                        
+                        $font = $fontMetrics->get_font("helvetica", "normal");
+                        $size = 8.25;
+                        $color = array(0.118, 0.161, 0.231); // #1e293b
+                        $textWidth = $fontMetrics->getTextWidth($watermarkText, $font, $size);
+                        
+                        // Right side, matching right margin
+                        $x = 595.28 - 30 - $textWidth;
+                        
+                        // Vertically align with footer
+                        $y = 804;
+                        
+                        $pdf->text($x, $y, $watermarkText, $font, $size, $color);
+                    }
+                }
             ');
         }
     </script>

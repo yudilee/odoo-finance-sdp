@@ -65,6 +65,9 @@
                         </a>
                     </th>
                     <th class="px-4 py-3">
+                        <span class="text-slate-500 font-medium">Print Mode</span>
+                    </th>
+                    <th class="px-4 py-3">
                         <a href="{{ request()->fullUrlWithQuery(['sort' => 'print_count', 'dir' => $sort === 'print_count' && $dir === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-emerald-600 transition-colors">
                             Total Prints
                             @if($sort === 'print_count')
@@ -90,6 +93,9 @@
                         <input type="checkbox" :value="{{ $log->id }}" x-model="selectedIds" class="rounded border-slate-300 dark:border-slate-600 text-emerald-600 bg-transparent focus:ring-emerald-500">
                     </td>
                     <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ $log->invoice_name }}</td>
+                    <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {{ str_replace('_', ' ', Str::title($log->print_mode)) }}
+                    </td>
                     <td class="px-4 py-3">
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                             {{ $log->print_count }} Times
@@ -107,7 +113,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+                    <td colspan="6" class="px-4 py-8 text-center text-slate-500">
                         No partially or extensively reprinted invoices found.
                     </td>
                 </tr>

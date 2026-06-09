@@ -226,12 +226,33 @@ class InvoiceRentalController extends Controller
         $invoice->load('lines');
         $invoices = collect([$invoice]);
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-                $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
+                
+                $sessionKey = 'printed_' . md5($inv->name . '_' . $cetakan);
+                $isDebounced = session()->has($sessionKey) && session()->get($sessionKey) > time() - 5;
+                
+                if (!$isDebounced) {
+                    $previousCount = $log->print_count ?? 0;
+                    $log->increment('print_count');
+                    session()->put($sessionKey, time());
+                    session()->put($sessionKey . '_prev', $previousCount);
+                } else {
+                    $previousCount = session()->get($sessionKey . '_prev', max(0, ($log->print_count ?? 1) - 1));
+                }
+                
+                $inv->print_count = $previousCount;
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for invoice: ' . $e->getMessage());
@@ -244,6 +265,7 @@ class InvoiceRentalController extends Controller
             'invoices' => $invoices,
             'showUsername' => $showUsername,
             'printMode' => $printMode,
+            'hideNopol' => $request->query('hide_nopol', '0') === '1',
             'enableWatermark' => Setting::get('enable_pdf_watermark', '1'),
             'defaultManager' => Setting::get('default_bc_manager', ''),
             'defaultSpv' => Setting::get('default_bc_spv', ''),
@@ -276,11 +298,32 @@ class InvoiceRentalController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-                $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
+                
+                $sessionKey = 'printed_' . md5($inv->name . '_' . $cetakan);
+                $isDebounced = session()->has($sessionKey) && session()->get($sessionKey) > time() - 5;
+                
+                if (!$isDebounced) {
+                    $previousCount = $log->print_count ?? 0;
+                    $log->increment('print_count');
+                    session()->put($sessionKey, time());
+                    session()->put($sessionKey . '_prev', $previousCount);
+                } else {
+                    $previousCount = session()->get($sessionKey . '_prev', max(0, ($log->print_count ?? 1) - 1));
+                }
+                
+                $inv->print_count = $previousCount;
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for selected invoices: ' . $e->getMessage());
@@ -292,7 +335,8 @@ class InvoiceRentalController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-rental.pdf', [
             'invoices' => $invoices,
             'showUsername' => $showUsername,
-            'printMode' => $printMode
+            'printMode' => $printMode,
+            'hideNopol' => $request->query('hide_nopol', '0') === '1'
         ])->setPaper('a4', 'portrait');
 
         $filename = count($invoices) === 1 
@@ -317,12 +361,21 @@ class InvoiceRentalController extends Controller
         $invoice->load('lines');
         $invoices = collect([$invoice]);
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for invoice: ' . $e->getMessage());
@@ -335,6 +388,7 @@ class InvoiceRentalController extends Controller
             'invoices' => $invoices,
             'showUsername' => $showUsername,
             'printMode' => $printMode,
+            'hideNopol' => $request->query('hide_nopol', '0') === '1',
             'enableWatermark' => Setting::get('enable_pdf_watermark', '1'),
             'defaultManager' => Setting::get('default_bc_manager', ''),
             'defaultSpv' => Setting::get('default_bc_spv', ''),
@@ -361,11 +415,20 @@ class InvoiceRentalController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for selected invoices: ' . $e->getMessage());
@@ -378,6 +441,7 @@ class InvoiceRentalController extends Controller
             'invoices' => $invoices,
             'showUsername' => $showUsername,
             'printMode' => $printMode,
+            'hideNopol' => $request->query('hide_nopol', '0') === '1',
             'isHtml' => true,
         ]);
     }
@@ -392,10 +456,22 @@ class InvoiceRentalController extends Controller
 
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-                $inv->kuitansi_print_count = $log->kuitansi_print_count;
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => 'default']);
+                
+                $sessionKey = 'printed_kuitansi_' . md5($inv->name);
+                $isDebounced = session()->has($sessionKey) && session()->get($sessionKey) > time() - 5;
+                
+                if (!$isDebounced) {
+                    $previousCount = $log->kuitansi_print_count ?? 0;
+                    $log->increment('kuitansi_print_count');
+                    session()->put($sessionKey, time());
+                    session()->put($sessionKey . '_prev', $previousCount);
+                } else {
+                    $previousCount = session()->get($sessionKey . '_prev', max(0, ($log->kuitansi_print_count ?? 1) - 1));
+                }
+                
+                $inv->kuitansi_print_count = $previousCount;
                 $inv->kuitansi_pembayaran = $log->kuitansi_pembayaran;
-                $log->increment('kuitansi_print_count');
             }
         } catch (\Exception $e) {
             foreach ($invoices as $inv) {
@@ -423,10 +499,10 @@ class InvoiceRentalController extends Controller
 
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => 'default']);
                 $inv->kuitansi_print_count = $log->kuitansi_print_count;
                 $inv->kuitansi_pembayaran = $log->kuitansi_pembayaran;
-                $log->increment('kuitansi_print_count');
+                // HTML preview does not increment the count
             }
         } catch (\Exception $e) {
             foreach ($invoices as $inv) {

@@ -27,6 +27,7 @@ class InvoiceRental extends Model
         'print_count',
         'narration',
         'partner_npwp',
+        'invoice_pic',
     ];
 
     protected $casts = [

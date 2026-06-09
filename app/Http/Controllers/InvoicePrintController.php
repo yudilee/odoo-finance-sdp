@@ -80,10 +80,19 @@ class InvoicePrintController extends Controller
         $printMode   = $request->input('print_mode', 'detail');
         $showUsername = $request->boolean('show_username', false);
 
+        $cetakan = 'detail_nopol';
+        if ($request->input('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->boolean('hide_nopol', false)) {
+            $cetakan = 'without_nopol';
+        } elseif ($request->boolean('show_username', false)) {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 $log->increment('print_count');
             }
@@ -148,10 +157,19 @@ class InvoicePrintController extends Controller
         $printMode    = $request->input('print_mode', 'detail');
         $showUsername = $request->boolean('show_username', false);
 
+        $cetakan = 'detail_nopol';
+        if ($request->input('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->boolean('hide_nopol', false)) {
+            $cetakan = 'without_nopol';
+        } elseif ($request->boolean('show_username', false)) {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 $log->increment('print_count');
             }

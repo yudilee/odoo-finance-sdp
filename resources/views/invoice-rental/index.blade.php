@@ -469,6 +469,20 @@
                         </div>
                     </label>
 
+                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 bg-white border-slate-100 hover:border-slate-200" data-value="without_nopol">
+                        <input type="radio" name="print_type" value="without_nopol" class="hidden">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-sm">Invoice without Nopol</h4>
+                            <p class="text-[11px] text-slate-500">Hides license plate data.</p>
+                        </div>
+                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+                        </div>
+                    </label>
+
                     <label class="option-card p-4 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 bg-white border-slate-100 hover:border-slate-200" data-value="detail_username">
                         <input type="radio" name="print_type" value="detail_username" class="hidden">
                         <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -573,6 +587,9 @@
                     } else if (value === 'summary') {
                         htmlUrl += '?print_mode=summary&show_username=0';
                         pdfUrl += '?print_mode=summary&show_username=0';
+                    } else if (value === 'without_nopol') {
+                        htmlUrl += '?print_mode=detail&show_username=0&hide_nopol=1';
+                        pdfUrl += '?print_mode=detail&show_username=0&hide_nopol=1';
                     } else {
                         htmlUrl += '?print_mode=detail&show_username=0';
                         pdfUrl += '?print_mode=detail&show_username=0';
@@ -682,7 +699,8 @@
                         const val = result.value;
                         const printMode    = val === 'summary' ? 'summary' : 'detail';
                         const showUsername = val === 'detail_username' ? 1 : 0;
-                        printBulkToHub('invoice_rental', ids, printMode, showUsername);
+                        const hideNopol    = val === 'without_nopol' ? 1 : 0;
+                        printBulkToHub('invoice_rental', ids, printMode, showUsername, hideNopol);
                     });
                 } else {
                     printBulkToHub('invoice_rental', ids);
@@ -724,6 +742,8 @@
                                 actionUrl += '?print_mode=detail&show_username=1';
                             } else if (value === 'summary') {
                                 actionUrl += '?print_mode=summary&show_username=0';
+                            } else if (value === 'without_nopol') {
+                                actionUrl += '?print_mode=detail&show_username=0&hide_nopol=1';
                             } else {
                                 actionUrl += '?print_mode=detail&show_username=0';
                             }

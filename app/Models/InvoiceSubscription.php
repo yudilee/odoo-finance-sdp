@@ -38,6 +38,7 @@ class InvoiceSubscription extends Model
         'partner_address',
         'partner_address_complete',
         'synced_at',
+        'invoice_pic',
     ];
 
     protected $casts = [

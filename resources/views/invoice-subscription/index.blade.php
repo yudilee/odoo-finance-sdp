@@ -347,7 +347,7 @@
             
             {{-- Tabs for Status --}}
             <div class="flex space-x-1 border-b border-slate-200 dark:border-slate-700 mb-4 overflow-x-auto pb-px">
-                @php $tabs = ['all' => 'All Status', 'not_invoiced' => 'Not Invoiced', 'not_invoiced_overdue' => 'Not Invoiced (Overdue)', 'not_invoiced_upcoming' => 'Not Invoiced (Upcoming)', 'draft' => 'Draft', 'unpaid' => 'Unpaid', 'paid' => 'Paid']; @endphp
+                @php $tabs = ['all' => 'All Status', 'not_invoiced' => 'Not Invoiced', 'not_invoiced_overdue' => 'Not Invoiced (Overdue)', 'not_invoiced_upcoming' => 'Not Invoiced (Upcoming)', 'draft' => 'Draft', 'uninvoiced' => 'Uninvoiced', 'unpaid' => 'Unpaid', 'paid' => 'Paid']; @endphp
                 @foreach($tabs as $val => $label)
                     <button type="submit" name="status" value="{{ $val }}" class="px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors {{ $statusFilter === $val ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300' }}">
                         {{ $label }}

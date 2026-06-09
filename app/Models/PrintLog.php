@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PrintLog extends Model
 {
-    protected $fillable = ['invoice_name', 'print_count', 'kuitansi_print_count', 'kuitansi_pembayaran', 'preferences'];
+    protected $fillable = ['invoice_name', 'print_mode', 'print_count', 'kuitansi_print_count', 'kuitansi_pembayaran', 'preferences'];
 
     protected $casts = [
         'preferences' => 'array',

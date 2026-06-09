@@ -229,12 +229,33 @@ class InvoiceVehicleController extends Controller
         $printMode = $request->query('print_mode', 'detail');
         $showUsername = $request->query('show_username', '0') === '1';
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-                $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
+                
+                $sessionKey = 'printed_' . md5($inv->name . '_' . $cetakan);
+                $isDebounced = session()->has($sessionKey) && session()->get($sessionKey) > time() - 5;
+                
+                if (!$isDebounced) {
+                    $previousCount = $log->print_count ?? 0;
+                    $log->increment('print_count');
+                    session()->put($sessionKey, time());
+                    session()->put($sessionKey . '_prev', $previousCount);
+                } else {
+                    $previousCount = session()->get($sessionKey . '_prev', max(0, ($log->print_count ?? 1) - 1));
+                }
+                
+                $inv->print_count = $previousCount;
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for vehicle invoice: ' . $e->getMessage());
@@ -277,11 +298,32 @@ class InvoiceVehicleController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
-                $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
+                
+                $sessionKey = 'printed_' . md5($inv->name . '_' . $cetakan);
+                $isDebounced = session()->has($sessionKey) && session()->get($sessionKey) > time() - 5;
+                
+                if (!$isDebounced) {
+                    $previousCount = $log->print_count ?? 0;
+                    $log->increment('print_count');
+                    session()->put($sessionKey, time());
+                    session()->put($sessionKey . '_prev', $previousCount);
+                } else {
+                    $previousCount = session()->get($sessionKey . '_prev', max(0, ($log->print_count ?? 1) - 1));
+                }
+                
+                $inv->print_count = $previousCount;
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for selected vehicle invoices: ' . $e->getMessage());
@@ -319,11 +361,20 @@ class InvoiceVehicleController extends Controller
         $showUsername = $request->query('show_username', '0') === '1';
 
         // Track print count
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for vehicle invoice: ' . $e->getMessage());
@@ -360,11 +411,20 @@ class InvoiceVehicleController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {
             Log::warning('Could not update print log for selected vehicle invoices: ' . $e->getMessage());
@@ -392,7 +452,7 @@ class InvoiceVehicleController extends Controller
 
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => 'default']);
                 $inv->kuitansi_print_count = $log->kuitansi_print_count;
                 $inv->kuitansi_pembayaran = $log->kuitansi_pembayaran;
                 $log->increment('kuitansi_print_count');
@@ -423,10 +483,10 @@ class InvoiceVehicleController extends Controller
 
         try {
             foreach ($invoices as $inv) {
-                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => $inv->name, 'print_mode' => 'default']);
                 $inv->kuitansi_print_count = $log->kuitansi_print_count;
                 $inv->kuitansi_pembayaran = $log->kuitansi_pembayaran;
-                $log->increment('kuitansi_print_count');
+                // HTML preview does not increment the count
             }
         } catch (\Exception $e) {
             foreach ($invoices as $inv) {

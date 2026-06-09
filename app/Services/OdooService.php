@@ -334,8 +334,9 @@ class OdooService
                 'narration', 'partner_id/vat', 'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'invoice_line_ids/duration_price', 'partner_id/.id',
                 'invoice_line_ids/rental_qty',
+                'hrc_forminv_invoice_pic/name',
             ];
 
             $entries = [];
@@ -371,6 +372,7 @@ class OdooService
                             'partner_npwp' => $row[18] ?? '',
                             'contract_ref' => !empty($row[19]) ? $row[19] : (!empty($row[20]) ? $row[20] : ($row[21] ?? '')),
                             'partner_id_odoo' => $row[24] ?? null,
+                            'invoice_pic' => $row[26] ?? '',
                             'lines' => [],
                         ];
                     }
@@ -447,7 +449,8 @@ class OdooService
                 'narration', 'partner_id/vat', 'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id'
+                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'hrc_forminv_invoice_pic/name',
             ];
 
             $entries = [];
@@ -483,6 +486,7 @@ class OdooService
                             'partner_npwp' => $row[18] ?? '',
                             'contract_ref' => !empty($row[19]) ? $row[19] : (!empty($row[20]) ? $row[20] : ($row[21] ?? '')),
                             'partner_id_odoo' => $row[24] ?? null,
+                            'invoice_pic' => $row[25] ?? '',
                             'lines' => [],
                         ];
                     }
@@ -558,7 +562,8 @@ class OdooService
                 'partner_id/vat', 'narration', 'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id'
+                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'hrc_forminv_invoice_pic/name',
             ];
 
             $entries = [];
@@ -594,6 +599,7 @@ class OdooService
                             'narration' => $row[20] ?? '',
                             'contract_ref' => !empty($row[21]) ? $row[21] : (!empty($row[22]) ? $row[22] : ($row[23] ?? '')),
                             'partner_id_odoo' => $row[26] ?? null,
+                            'invoice_pic' => $row[27] ?? '',
                             'lines' => [],
                         ];
                     }
@@ -701,6 +707,7 @@ class OdooService
                 'rental_order_id/partner_id/contact_address_complete',   // 25: Address (single line)
                 'rental_order_id/partner_id/vat',                        // 26: NPWP
                 'rental_order_id/partner_id/.id',                        // 27: Partner ID for enrichment
+                'invoice_id/hrc_forminv_invoice_pic/name',               // 28: PIC Name
             ];
 
             $entries    = [];
@@ -769,6 +776,7 @@ class OdooService
                         'partner_address_complete' => $row[25] ?? '',
                         'partner_npwp'        => $row[26] ?? '',
                         'partner_id_odoo'     => $row[27] ?? null,
+                        'invoice_pic'         => $row[28] ?? '',
                     ];
                 }
             }
@@ -831,7 +839,7 @@ class OdooService
                 'invoice_line_ids/product_id/name',
                 'invoice_line_ids/sale_order_id/actual_start_rental',
                 'invoice_line_ids/sale_order_id/actual_end_rental', 'partner_id/.id',
-                'contract_ref'
+                'contract_ref', 'hrc_forminv_invoice_pic/name'
             ];
 
             $entries = [];
@@ -867,6 +875,7 @@ class OdooService
                             'narration' => $row[23] ?? '',
                             'contract_ref' => !empty($row[35]) ? $row[35] : ($row[24] ?? $row[25] ?? ''),
                             'partner_id_odoo' => $row[34] ?? null,
+                            'invoice_pic' => $row[36] ?? '',
                             'lines' => [],
                         ];
                     }

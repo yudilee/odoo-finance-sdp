@@ -37,25 +37,23 @@
 function showPrintOptions() {
     Swal.fire({
         title: 'Pilih Jenis Cetakan',
-        input: 'radio',
-        inputOptions: {
-            'detail': 'Invoice with detail',
-            'summary': 'Invoice with summary only'
-        },
-        inputValue: 'detail',
-        icon: 'question',
+        html: window.buildPrintOptionsHtml(),
         showCancelButton: true,
-        confirmButtonText: 'Print',
+        confirmButtonText: 'Preview',
         cancelButtonText: 'Batal',
         reverseButtons: true,
-        inputValidator: (value) => {
-            if (!value) return 'Anda harus memilih salah satu!';
+        confirmButtonColor: '#10b981',
+        width: '450px',
+        didOpen: () => window.initPrintOptions(),
+        preConfirm: () => {
+            return window.swalSelectedValue;
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            let url = "{{ route('invoice-vehicle.print', $invoice) }}";
-            url += '?print_mode=' + result.value + '&show_username=0';
-            window.open(url, '_blank');
+            let baseUrl = "{{ route('invoice-vehicle.print', $invoice) }}";
+            let htmlUrl = baseUrl.replace('/pdf', '/html') + '?print_mode=' + result.value + '&show_username=0';
+            let pdfUrl = baseUrl + '?print_mode=' + result.value + '&show_username=0';
+            window.showInvoicePreviewModal(htmlUrl, pdfUrl);
         }
     });
 }

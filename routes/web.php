@@ -200,6 +200,10 @@ Route::middleware('auth')->group(function () {
         Route::post('print-logs/bulk-reset', [AdminPrintLogController::class, 'resetBulk'])->name('print_logs.reset_bulk');
         Route::post('print-logs/{printLog}/reset', [AdminPrintLogController::class, 'reset'])->name('print_logs.reset');
 
+        // Reset INV Counter
+        Route::get('reset-inv-counter', [\App\Http\Controllers\Admin\ResetInvCounterController::class, 'index'])->name('reset_inv_counter.index');
+        Route::post('reset-inv-counter', [\App\Http\Controllers\Admin\ResetInvCounterController::class, 'reset'])->name('reset_inv_counter.reset');
+
         // Odoo Settings (Relocated)
         Route::post('odoo/config', [SettingController::class, 'saveOdooConfig'])->name('settings.odoo.config');
         Route::post('odoo/test', [SettingController::class, 'testOdooConnection'])->name('settings.odoo.test');

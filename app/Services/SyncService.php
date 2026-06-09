@@ -38,6 +38,7 @@ class SyncService
                     'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                     'narration' => $entry['narration'] ?? null,
                     'partner_npwp' => $entry['partner_npwp'] ?? null,
+                    'invoice_pic' => $entry['invoice_pic'] ?? null,
                 ]
             );
 
@@ -82,6 +83,7 @@ class SyncService
                     'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                     'narration' => $entry['narration'] ?? null,
                     'partner_npwp' => $entry['partner_npwp'] ?? null,
+                    'invoice_pic' => $entry['invoice_pic'] ?? null,
                 ]
             );
 
@@ -125,6 +127,7 @@ class SyncService
                     'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                     'partner_npwp' => $entry['partner_npwp'] ?? null,
                     'narration' => $entry['narration'] ?? null,
+                    'invoice_pic' => $entry['invoice_pic'] ?? null,
                 ]
             );
 
@@ -171,6 +174,7 @@ class SyncService
                     'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                     'narration' => $entry['narration'] ?? null,
                     'partner_npwp' => $entry['partner_npwp'] ?? null,
+                    'invoice_pic' => $entry['invoice_pic'] ?? null,
                 ]
             );
 
@@ -299,6 +303,7 @@ class SyncService
                 'partner_address_complete' => $entry['partner_address_complete'] ?? null,
                 'payment_state'       => $entry['payment_state'] ?: null,
                 'synced_at'           => $syncedAt,
+                'invoice_pic'         => $entry['invoice_pic'] ?? null,
             ];
 
             InvoiceSubscription::updateOrCreate(

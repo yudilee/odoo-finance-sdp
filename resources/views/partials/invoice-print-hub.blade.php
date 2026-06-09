@@ -97,7 +97,7 @@
 
         Swal.fire({
             title: 'Pilih Jenis Cetakan',
-            html: window.getPrintOptionsHtml ? getPrintOptionsHtml('Pilih Jenis Cetakan') : buildPrintOptionsHtml(),
+            html: window.buildPrintOptionsHtml(),
             showCancelButton: true,
             confirmButtonText: 'Print to Hub',
             cancelButtonText: 'Batal',
@@ -105,8 +105,7 @@
             confirmButtonColor: '#10b981',
             width: '450px',
             didOpen: () => {
-                if (window.initSwalEvents) initSwalEvents();
-                else initPrintOptions();
+                window.initPrintOptions();
             },
             preConfirm: () => window.swalSelectedValue || 'detail_nopol'
         }).then(result => {
@@ -119,7 +118,7 @@
     };
 
     /* ---------- bulk send ---------- */
-    window.printBulkToHub = async function (docType, selectedIds, printMode, showUsername) {
+    window.printBulkToHub = async function (docType, selectedIds, printMode, showUsername, hideNopol) {
         printMode   = printMode   || 'detail';
         showUsername = showUsername || 0;
 
@@ -130,6 +129,7 @@
             formData.append('doc_type',     docType);
             formData.append('print_mode',   printMode);
             formData.append('show_username',showUsername);
+            if (hideNopol) formData.append('hide_nopol', hideNopol);
             selectedIds.forEach(id => formData.append('selected_ids[]', id));
 
             const res    = await fetch('{{ route('invoice.print-hub-bulk') }}', {
@@ -148,41 +148,71 @@
     };
 
     /* ---------- fallback print-options builder (for pages that don't load Swal) ---------- */
-    function buildPrintOptionsHtml() {
-        return `<div class="text-left py-2">
-            <div class="space-y-3" id="print-options-group">
-                <label class="option-card p-4 border-2 rounded-xl cursor-pointer flex items-center gap-4 bg-slate-50 border-emerald-500 shadow-sm" data-value="detail_nopol">
-                    <input type="radio" name="print_type" value="detail_nopol" class="hidden" checked>
-                    <div class="flex-1"><h4 class="font-bold text-sm">Invoice with detail Nopol</h4><p class="text-[11px] text-slate-500">Standard detailing license plates.</p></div>
-                    <div class="radio-indicator w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div></div>
-                </label>
-                <label class="option-card p-4 border-2 rounded-xl cursor-pointer flex items-center gap-4 bg-white border-slate-100" data-value="detail_username">
-                    <input type="radio" name="print_type" value="detail_username" class="hidden">
-                    <div class="flex-1"><h4 class="font-bold text-sm">Invoice with detail and username</h4><p class="text-[11px] text-slate-500">Includes driver/operator names.</p></div>
-                    <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div></div>
-                </label>
-                <label class="option-card p-4 border-2 rounded-xl cursor-pointer flex items-center gap-4 bg-white border-slate-100" data-value="summary">
-                    <input type="radio" name="print_type" value="summary" class="hidden">
-                    <div class="flex-1"><h4 class="font-bold text-sm">Invoice with summary only</h4><p class="text-[11px] text-slate-500">Compact one-line per item summary.</p></div>
-                    <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div></div>
-                </label>
-            </div></div>`;
-    }
+    window.buildPrintOptionsHtml = function(isBulk = false) {
+        const text = isBulk ? 'Beberapa invoice yang dipilih adalah tipe Subscription (INVRS).' : '';
+        return `
+            <div class="text-left py-2">
+                ${text ? `<p class="text-sm text-slate-500 mb-4">${text}</p>` : ''}
+                <div class="space-y-3" id="print-options-group">
+                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer flex items-center gap-4 bg-slate-50 border-emerald-500 shadow-sm transition-all active-option" data-value="detail">
+                        <input type="radio" name="print_type" value="detail" class="hidden" checked>
+                        <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-sm">Invoice with detail</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Full line-item breakdown.</p>
+                        </div>
+                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        </div>
+                    </label>
 
-    function initPrintOptions() {
+                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer flex items-center gap-4 bg-white border-slate-100 transition-all hover:border-emerald-200" data-value="summary">
+                        <input type="radio" name="print_type" value="summary" class="hidden">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-sm">Invoice with summary only</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Compact one-line per item summary.</p>
+                        </div>
+                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <style>
+                #print-options-group .option-card.active-option { 
+                    border-color: #10b981 !important; 
+                    background-color: #f0fdf4 !important;
+                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                }
+                #print-options-group .option-card.active-option .radio-indicator { 
+                    border-color: #10b981 !important; 
+                }
+                #print-options-group .option-card.active-option .radio-indicator div { 
+                    display: block !important; 
+                }
+            </style>
+        `;
+    };
+
+    window.initPrintOptions = function() {
         const container = document.getElementById('print-options-group');
         if (!container) return;
-        window.swalSelectedValue = 'detail_nopol';
+        window.swalSelectedValue = 'detail';
         container.querySelectorAll('.option-card').forEach(card => {
             card.addEventListener('click', () => {
                 container.querySelectorAll('.option-card').forEach(c => {
-                    c.classList.remove('border-emerald-500', 'bg-slate-50', 'shadow-sm');
+                    c.classList.remove('border-emerald-500', 'bg-slate-50', 'bg-f0fdf4', 'shadow-sm', 'active-option');
                     c.classList.add('border-slate-100', 'bg-white');
                     c.querySelector('.radio-indicator div').classList.add('hidden');
                     c.querySelector('.radio-indicator').classList.remove('border-emerald-500');
                     c.querySelector('.radio-indicator').classList.add('border-slate-200');
                 });
-                card.classList.add('border-emerald-500', 'bg-slate-50', 'shadow-sm');
+                card.classList.add('border-emerald-500', 'bg-f0fdf4', 'shadow-sm', 'active-option');
                 card.classList.remove('border-slate-100', 'bg-white');
                 card.querySelector('.radio-indicator div').classList.remove('hidden');
                 card.querySelector('.radio-indicator').classList.add('border-emerald-500');
@@ -191,5 +221,39 @@
             });
         });
     }
+
+    /* ---------- preview modal (iframe) ---------- */
+    window.showInvoicePreviewModal = function(htmlUrl, pdfUrl) {
+        Swal.fire({
+            html: `
+                <div style="margin:0 -20px 0 -20px;">
+                    <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
+                        <span style="color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;">
+                            <span style="background-color:#fef08a;width:12px;height:12px;border-radius:3px;display:inline-block;"></span> = Rate anomaly (internal only, hidden in PDF)
+                        </span>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <a href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Download PDF (Clean)
+                            </a>
+                            <button onclick="Swal.close()" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:9999px;transition:all 0.2s;" onmouseover="this.style.color='#f8fafc';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <iframe src="${htmlUrl}" style="width:100%;height:78vh;border:none;display:block;"></iframe>
+                </div>
+            `,
+            width: '900px',
+            padding: '0',
+            showConfirmButton: false,
+            showCloseButton: false,
+            customClass: {
+                popup: 'swal-preview-popup'
+            }
+        });
+    };
 })();
 </script>

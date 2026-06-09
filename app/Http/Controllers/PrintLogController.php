@@ -33,7 +33,7 @@ class PrintLogController extends Controller
         $pembayaranText = empty($lines) ? null : implode("\n", $lines);
 
         $printLog = PrintLog::firstOrCreate(
-            ['invoice_name' => $request->invoice_name]
+            ['invoice_name' => $request->invoice_name, 'print_mode' => 'default']
         );
 
         $printLog->kuitansi_pembayaran = $pembayaranText;

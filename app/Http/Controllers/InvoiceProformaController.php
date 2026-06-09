@@ -265,11 +265,20 @@ class InvoiceProformaController extends Controller
         $invoice->load('lines');
         $invoices = collect([$invoice]);
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
-                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 $log->increment('print_count');
             }
@@ -315,10 +324,19 @@ class InvoiceProformaController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
-                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 $log->increment('print_count');
             }
@@ -353,13 +371,22 @@ class InvoiceProformaController extends Controller
         $invoice->load('lines');
         $invoices = collect([$invoice]);
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         // Track print count
         try {
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
-                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {}
 
@@ -393,12 +420,21 @@ class InvoiceProformaController extends Controller
             ->orderBy('name', 'desc')
             ->get();
 
+        $cetakan = 'detail_nopol';
+        if ($request->query('print_mode') === 'summary') {
+            $cetakan = 'summary';
+        } elseif ($request->query('hide_nopol') === '1') {
+            $cetakan = 'without_nopol';
+        } elseif ($request->query('show_username') === '1') {
+            $cetakan = 'detail_username';
+        }
+
         try {
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
-                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id]);
+                $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
-                $log->increment('print_count');
+                // HTML preview does not increment the print count
             }
         } catch (\Exception $e) {}
 

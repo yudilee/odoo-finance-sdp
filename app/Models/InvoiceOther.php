@@ -26,6 +26,7 @@ class InvoiceOther extends Model
         'partner_address_complete',
         'narration',
         'partner_npwp',
+        'invoice_pic',
     ];
 
     protected $casts = [
