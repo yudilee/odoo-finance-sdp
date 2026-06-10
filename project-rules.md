@@ -15,7 +15,9 @@ This document contains persistent rules that the AI assistant must follow when w
 
 ## Automations
 
-1. **Sign Off Command**: If the user says "sign off" (or similar), you MUST automatically:
+1. **New Task Trigger**: If the user says "new task", you MUST automatically run `git add .` and `git commit -m "Backup: Save stable state before starting new task"` BEFORE discussing or planning the new feature.
+
+2. **Sign Off Command**: If the user says "sign off" (or similar), you MUST automatically:
    - Run `git add .` and `git commit -m "chore: save end of session state"` (if there are uncommitted changes).
    - Generate a markdown file named `session_log_YYYY-MM-DD.md` in the project root.
    - Summarize all the work done, bugs fixed, and exact technical choices made during the current session into that file.

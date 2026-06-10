@@ -450,7 +450,7 @@
 
 <script>
     function getPrintOptionsHtml(title, isBulk = false) {
-        const text = isBulk ? 'Beberapa invoice yang dipilih adalah tipe Subscription (INVRS).' : '';
+        const text = isBulk ? 'Beberapa invoice yang dipilih adalah tipe Subscription (INVRS/INVRT).' : '';
         return `
             <div class="text-left py-2">
                 ${text ? `<p class="text-sm text-slate-500 mb-4">${text}</p>` : ''}
@@ -562,7 +562,7 @@
     }
 
     function printInvoice(name, url) {
-        if (name.startsWith('INVRS')) {
+        if (name.startsWith('INVRS') || name.startsWith('INVRT')) {
             Swal.fire({
                 title: 'Pilih Jenis Cetakan',
                 html: getPrintOptionsHtml('Pilih Jenis Cetakan'),

@@ -559,10 +559,11 @@
                                 $periodeEnd   = !empty($line->actual_end) ? \Carbon\Carbon::parse($line->actual_end) : null;
 
                                 $isINVRT = str_starts_with($invoice->name, 'INVRT');
+                                $isBln = in_array(strtolower(trim($line->uom ?? '')), ['month', 'months', 'bln']);
                                 
                                 $startStr = '-';
                                 if ($periodeStart) {
-                                    if ($isINVRT && $periodeStart->format('H:i') !== '00:00') {
+                                    if ($isINVRT && !$isBln && $periodeStart->format('H:i') !== '00:00') {
                                         $startStr = $periodeStart->format('d/m h:i A');
                                     } else {
                                         $startStr = $periodeStart->format('d/m/Y');
@@ -571,7 +572,7 @@
 
                                 $endStr = '-';
                                 if ($periodeEnd) {
-                                    if ($isINVRT && $periodeEnd->format('H:i') !== '00:00') {
+                                    if ($isINVRT && !$isBln && $periodeEnd->format('H:i') !== '00:00') {
                                         $endStr = $periodeEnd->format('d/m h:i A');
                                     } else {
                                         $endStr = $periodeEnd->format('d/m/Y');
