@@ -114,6 +114,7 @@ Route::middleware('auth')->group(function () {
     // Invoice Proforma (Draft Invoices)
     Route::group(['prefix' => 'invoice-proforma', 'as' => 'invoice-proforma.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceProformaController::class, 'index'])->name('index');
+        Route::get('/report', [InvoiceProformaController::class, 'report'])->name('report');
         Route::post('/sync', [InvoiceProformaController::class, 'sync'])->name('sync');
         Route::post('/sync-ids', [InvoiceProformaController::class, 'getSyncIds'])->name('sync-ids');
         Route::post('/sync-batch', [InvoiceProformaController::class, 'syncBatch'])->name('sync-batch');

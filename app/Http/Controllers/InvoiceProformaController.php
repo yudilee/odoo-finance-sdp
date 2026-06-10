@@ -93,6 +93,87 @@ class InvoiceProformaController extends Controller
     }
 
     /**
+     * Display the proforma report page (downloaded history)
+     */
+    public function report(Request $request)
+    {
+        $sort = $request->input('sort', 'invoice_date');
+        $dir = $request->input('dir', 'desc');
+
+        $query = InvoiceProforma::with('lines')->whereNotNull('proforma_number');
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('proforma_number', 'like', "%{$search}%")
+                  ->orWhere('partner_name', 'like', "%{$search}%")
+                  ->orWhere('ref', 'like', "%{$search}%")
+                  ->orWhere('bc_manager', 'like', "%{$search}%")
+                  ->orWhere('bc_spv', 'like', "%{$search}%");
+            });
+        }
+
+        // Date range filter
+        if ($request->filled('date_from')) {
+            $query->where([['invoice_date', '>=', $request->date_from]]);
+        }
+        if ($request->filled('date_to')) {
+            $query->where([['invoice_date', '<=', $request->date_to]]);
+        }
+
+        // Sorting
+        $allowedSorts = ['name', 'proforma_number', 'invoice_date', 'partner_name', 'ref', 'amount_untaxed', 'amount_tax', 'amount_total', 'print_count'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'invoice_date';
+        }
+        if (!in_array($dir, ['asc', 'desc'])) {
+            $dir = 'desc';
+        }
+
+        $query->orderBy($sort, $dir);
+        if ($sort !== 'proforma_number') {
+            $query->orderBy('proforma_number', 'desc');
+        }
+        $query->orderBy('odoo_id', 'desc');
+
+        $perPage = $request->input('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100])) $perPage = 25;
+
+        $invoices = $query->paginate($perPage)->withQueryString();
+
+        // Summary stats
+        $statsQuery = InvoiceProforma::query()->whereNotNull('proforma_number')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->search;
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('proforma_number', 'like', "%{$search}%")
+                        ->orWhere('partner_name', 'like', "%{$search}%")
+                        ->orWhere('ref', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('date_from'), function ($q) use ($request) {
+                $q->where('invoice_date', '>=', $request->date_from);
+            })
+            ->when($request->filled('date_to'), function ($q) use ($request) {
+                $q->where('invoice_date', '<=', $request->date_to);
+            });
+
+        $stats = $statsQuery->selectRaw("
+                count(*) as total_invoices,
+                sum(amount_untaxed) as total_untaxed,
+                sum(amount_tax) as total_tax,
+                sum(amount_total) as total_amount
+            ")
+            ->first()
+            ->toArray();
+
+        return view('invoice-proforma.report', compact('invoices', 'stats', 'sort', 'dir', 'perPage'));
+    }
+
+    /**
      * Get all Odoo IDs for the given date range to sync
      */
     public function getSyncIds(Request $request)
