@@ -157,6 +157,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/sync-init', [UninvoicedRentalController::class, 'syncInit'])->name('sync-init');
         Route::post('/sync-chunk', [UninvoicedRentalController::class, 'syncChunk'])->name('sync-chunk');
         Route::post('/export', [UninvoicedRentalController::class, 'export'])->name('export');
+        Route::post('/auto-sync/toggle', [UninvoicedRentalController::class, 'toggleAutoSync'])->name('auto-sync.toggle');
     });
 
     // Kuitansi Override Route (accessible by authenticated users printing Kuitansi)

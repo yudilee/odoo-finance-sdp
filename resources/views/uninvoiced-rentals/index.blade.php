@@ -7,9 +7,9 @@
 <div class="flex flex-col gap-6" x-data="uninvoicedRentals()">
     
     {{-- Top Bar: Search & Actions --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="flex flex-col lg:flex-row justify-start items-start lg:items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-wrap">
         
-        <form method="GET" action="{{ route('uninvoiced-rentals.index') }}" class="flex items-center gap-2 w-full sm:w-auto">
+        <form method="GET" action="{{ route('uninvoiced-rentals.index') }}" class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
             <div class="relative w-full sm:w-80">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,6 +63,19 @@
                     Export
                 </button>
             </form>
+
+            {{-- Auto Sync Toggle --}}
+            <div class="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Auto Sync</span>
+                <button type="button" 
+                        @click="autoSyncEnabled = !autoSyncEnabled; toggleAutoSync()" 
+                        :class="autoSyncEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'" 
+                        class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
+                    <span aria-hidden="true" 
+                          :class="autoSyncEnabled ? 'translate-x-4' : 'translate-x-0'" 
+                          class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                </button>
+            </div>
 
             {{-- Sync Button --}}
             <button @click="syncData" :disabled="isSyncing" 
@@ -179,6 +192,26 @@
             isSyncing: false,
             syncStatusText: 'Initializing...',
             syncPercentage: 0,
+            autoSyncEnabled: {{ $autoSyncEnabled ? 'true' : 'false' }},
+
+            async toggleAutoSync() {
+                try {
+                    const res = await fetch('{{ route('uninvoiced-rentals.auto-sync.toggle') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ enabled: this.autoSyncEnabled })
+                    });
+                    const data = await res.json();
+                    if(!data.success) throw new Error();
+                } catch(e) {
+                    this.autoSyncEnabled = !this.autoSyncEnabled; // Revert
+                    alert('Failed to update auto-sync setting.');
+                }
+            },
 
             async syncData() {
                 if(this.isSyncing) return;
