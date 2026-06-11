@@ -114,6 +114,7 @@ Route::middleware('auth')->group(function () {
     // Invoice Proforma (Draft Invoices)
     Route::group(['prefix' => 'invoice-proforma', 'as' => 'invoice-proforma.', 'middleware' => 'role:invoice'], function () {
         Route::get('/', [InvoiceProformaController::class, 'index'])->name('index');
+        Route::get('/report', [InvoiceProformaController::class, 'report'])->name('report');
         Route::post('/sync', [InvoiceProformaController::class, 'sync'])->name('sync');
         Route::post('/sync-ids', [InvoiceProformaController::class, 'getSyncIds'])->name('sync-ids');
         Route::post('/sync-batch', [InvoiceProformaController::class, 'syncBatch'])->name('sync-batch');
@@ -156,6 +157,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/sync-init', [UninvoicedRentalController::class, 'syncInit'])->name('sync-init');
         Route::post('/sync-chunk', [UninvoicedRentalController::class, 'syncChunk'])->name('sync-chunk');
         Route::post('/export', [UninvoicedRentalController::class, 'export'])->name('export');
+        Route::post('/auto-sync/toggle', [UninvoicedRentalController::class, 'toggleAutoSync'])->name('auto-sync.toggle');
     });
 
     // Kuitansi Override Route (accessible by authenticated users printing Kuitansi)

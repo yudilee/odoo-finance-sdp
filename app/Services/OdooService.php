@@ -33,11 +33,11 @@ class OdooService
             }
 
             $uid = $this->authenticate();
-            
+
             if ($uid && is_numeric($uid)) {
                 return ['success' => true, 'message' => "Connection successful! User ID: {$uid}"];
             }
-            
+
             return ['success' => false, 'message' => 'Authentication failed. Check credentials.'];
         } catch (\Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
@@ -75,7 +75,7 @@ class OdooService
                 'name',                           // 1: Move name (e.g. KJKT/2026/00427)
                 'date',                            // 2: Date
                 'journal_id/display_name',         // 3: Journal name (e.g. Kas Jakarta)
-                'partner_id/display_name',         // 4: Partner
+                'partner_id/commercial_partner_id/display_name',         // 4: Partner (Use Commercial Partner to get Parent Company Name)
                 'ref',                             // 5: Reference
                 'amount_total_signed',             // 6: Total amount
                 'line_ids/account_id/display_name',// 7: Account (e.g. "111002 Kas Jakarta")
@@ -105,7 +105,7 @@ class OdooService
                     $odooId = $row[0] ?? '';
                     $moveName = $row[1] ?? '';
                     $accountDisplay = $row[7] ?? '';
-                    
+
                     // Extract account code from display name
                     $accountCode = '';
                     $accountName = '';
@@ -127,7 +127,7 @@ class OdooService
                             'journal_name' => $row[3] ?? '',
                             'partner_name' => $row[4] ?? '',
                             'ref' => $row[5] ?? '',
-                            'amount_total_signed' => (float)($row[6] ?? 0),
+                            'amount_total_signed' => (float) ($row[6] ?? 0),
                             'payment_reference' => $row[12] ?? '',
                             'lines' => [],
                         ];
@@ -140,8 +140,8 @@ class OdooService
                             'account_name' => $accountName,
                             'display_name' => $row[8] ?? '',
                             'ref' => $row[9] ?? '',
-                            'debit' => (float)($row[10] ?? 0),
-                            'credit' => (float)($row[11] ?? 0),
+                            'debit' => (float) ($row[10] ?? 0),
+                            'credit' => (float) ($row[11] ?? 0),
                             'reconcile_id' => $row[13] ?? null,
                         ];
                     }
@@ -173,7 +173,7 @@ class OdooService
                 foreach ($entries as $entry) {
                     foreach ($entry['lines'] as $line) {
                         if (!empty($line['reconcile_id'])) {
-                            $allReconcileIds[] = (int)$line['reconcile_id'];
+                            $allReconcileIds[] = (int) $line['reconcile_id'];
                         }
                     }
                 }
@@ -183,33 +183,35 @@ class OdooService
                     $billMap = []; // Final map from RecID to Bill Name
                     $processedRecIds = [];
                     $currentRecIds = $allReconcileIds;
-                    
+
                     // Keep track of which original RecID each discovered RecID belongs to
                     // mapping: discovered_rec_id => [original_rec_id, ...]
                     $recRelationships = [];
                     foreach ($allReconcileIds as $rid) {
                         $recRelationships[$rid] = [$rid];
                     }
-                    
+
                     for ($level = 0; $level < 2; $level++) {
-                        if (empty($currentRecIds)) break;
-                        
+                        if (empty($currentRecIds))
+                            break;
+
                         $linkedLines = $this->execute('account.move.line', 'search_read', [
                             [['full_reconcile_id', 'in', $currentRecIds]],
                             ['full_reconcile_id', 'move_name', 'move_id']
                         ]);
 
-                        if (!is_array($linkedLines)) break;
+                        if (!is_array($linkedLines))
+                            break;
 
                         $nextRecIds = [];
                         $moveIdsToCheck = []; // move_id => [parent_rec_id, ...]
 
                         foreach ($linkedLines as $ll) {
                             $recIdFull = $ll['full_reconcile_id'] ?? null;
-                            $recId = is_array($recIdFull) ? $recIdFull[0] : (int)$recIdFull;
-                            
+                            $recId = is_array($recIdFull) ? $recIdFull[0] : (int) $recIdFull;
+
                             $moveName = $ll['move_name'] ?? '';
-                            
+
                             // If it's a bill, attribute it to all its "ancestor" RecIDs
                             if (stripos($moveName, 'BILL') !== false || stripos($moveName, 'INV') !== false) {
                                 $moveRef = '';
@@ -220,7 +222,7 @@ class OdooService
                                     }
                                 }
                                 $billName = !empty($moveRef) ? "{$moveName} ({$moveRef})" : $moveName;
-                                
+
                                 foreach (($recRelationships[$recId] ?? [$recId]) as $ancestorId) {
                                     $billMap[$ancestorId] = $billName;
                                 }
@@ -239,19 +241,20 @@ class OdooService
                                 [['move_id', 'in', $mIds], ['full_reconcile_id', '!=', false]],
                                 ['full_reconcile_id', 'move_id']
                             ]);
-                            
+
                             if (is_array($otherLines)) {
                                 foreach ($otherLines as $ol) {
                                     $nextIdFull = $ol['full_reconcile_id'] ?? null;
-                                    $nextId = is_array($nextIdFull) ? $nextIdFull[0] : (int)$nextIdFull;
+                                    $nextId = is_array($nextIdFull) ? $nextIdFull[0] : (int) $nextIdFull;
                                     $mId = $ol['move_id'][0] ?? null;
-                                    
+
                                     if ($nextId && !in_array($nextId, $processedRecIds) && !in_array($nextId, $currentRecIds)) {
                                         $nextRecIds[] = $nextId;
                                         // Pass the ancestors down
                                         $ancestors = $moveIdsToCheck[$mId] ?? [];
                                         foreach ($ancestors as $aid) {
-                                            if (!isset($recRelationships[$nextId])) $recRelationships[$nextId] = [];
+                                            if (!isset($recRelationships[$nextId]))
+                                                $recRelationships[$nextId] = [];
                                             if (!in_array($aid, $recRelationships[$nextId])) {
                                                 $recRelationships[$nextId][] = $aid;
                                             }
@@ -269,7 +272,7 @@ class OdooService
                     foreach ($entries as &$entry) {
                         foreach ($entry['lines'] as &$line) {
                             if (!empty($line['reconcile_id'])) {
-                                $rid = (int)$line['reconcile_id'];
+                                $rid = (int) $line['reconcile_id'];
                                 if (isset($billMap[$rid])) {
                                     $this->appendPaymentRef($entry, $billMap[$rid]);
                                 }
@@ -323,18 +326,34 @@ class OdooService
     public function fetchInvoiceDriversByIds(array $moveIds): array
     {
         try {
-            if (empty($moveIds)) return ['success' => true, 'data' => []];
+            if (empty($moveIds))
+                return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
-                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
-                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
-                'partner_bank_id', 'bc_manager_id/name', 'bc_spv_id/name',
-                'partner_id/contact_address', 'partner_id/contact_address_complete',
-                'narration', 'partner_id/vat', 'contract_ref',
+                'name',
+                'partner_id/name',
+                'invoice_date',
+                'invoice_payment_term_id/name',
+                'ref',
+                'journal_id/name',
+                'amount_untaxed',
+                'amount_tax',
+                'amount_total',
+                'invoice_line_ids/name',
+                'invoice_line_ids/quantity',
+                'invoice_line_ids/price_unit',
+                'partner_bank_id',
+                'bc_manager_id/name',
+                'bc_spv_id/name',
+                'partner_id/contact_address',
+                'partner_id/contact_address_complete',
+                'narration',
+                'partner_id/vat',
+                'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_line_ids/duration_price', 'partner_id/.id',
+                'invoice_line_ids/duration_price',
+                'partner_id/.id',
                 'invoice_line_ids/rental_qty',
                 'hrc_forminv_invoice_pic/name',
             ];
@@ -345,13 +364,15 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-                if (!isset($result['datas'])) continue;
+                if (!isset($result['datas']))
+                    continue;
 
                 $currentEntry = null;
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        if ($currentEntry !== null)
+                            $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -360,9 +381,9 @@ class OdooService
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Driver',
-                            'amount_untaxed' => (float)($row[6] ?? 0),
-                            'amount_tax' => (float)($row[7] ?? 0),
-                            'amount_total' => (float)($row[8] ?? 0),
+                            'amount_untaxed' => (float) ($row[6] ?? 0),
+                            'amount_tax' => (float) ($row[7] ?? 0),
+                            'amount_total' => (float) ($row[8] ?? 0),
                             'partner_bank' => $row[12] ?? '',
                             'manager_name' => $row[13] ?? '',
                             'spv_name' => $row[14] ?? '',
@@ -379,26 +400,29 @@ class OdooService
 
                     if ($currentEntry !== null) {
                         $lineDesc = $row[9] ?? '';
-                        $lineQty = (float)($row[10] ?? 0);
-                        $linePrice = (float)($row[11] ?? 0);
+                        $lineQty = (float) ($row[10] ?? 0);
+                        $linePrice = (float) ($row[11] ?? 0);
 
                         if (empty($currentEntry['contract_ref'])) {
-                            if (!empty($row[20])) $currentEntry['contract_ref'] = $row[20];
-                            elseif (!empty($row[21])) $currentEntry['contract_ref'] = $row[21];
+                            if (!empty($row[20]))
+                                $currentEntry['contract_ref'] = $row[20];
+                            elseif (!empty($row[21]))
+                                $currentEntry['contract_ref'] = $row[21];
                         }
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
-                                'rental_qty' => (float)($row[25] ?? 0),
+                                'rental_qty' => (float) ($row[25] ?? 0),
                                 'price_unit' => $linePrice,
-                                'duration_price' => (float)($row[23] ?? 0),
+                                'duration_price' => (float) ($row[23] ?? 0),
                             ];
                         }
                     }
                 }
-                if ($currentEntry !== null) $entries[] = $currentEntry;
+                if ($currentEntry !== null)
+                    $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
@@ -411,7 +435,8 @@ class OdooService
     public function fetchInvoiceDrivers(string $dateFrom, string $dateTo): array
     {
         $res = $this->getInvoiceDriverIds($dateFrom, $dateTo);
-        if (!$res['success']) return $res;
+        if (!$res['success'])
+            return $res;
         return $this->fetchInvoiceDriversByIds($res['ids']);
     }
 
@@ -438,18 +463,35 @@ class OdooService
     public function fetchInvoiceOthersByIds(array $moveIds): array
     {
         try {
-            if (empty($moveIds)) return ['success' => true, 'data' => []];
+            if (empty($moveIds))
+                return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
-                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
-                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
-                'partner_bank_id', 'bc_manager_id/name', 'bc_spv_id/name',
-                'partner_id/contact_address', 'partner_id/contact_address_complete',
-                'narration', 'partner_id/vat', 'contract_ref',
+                'name',
+                'partner_id/name',
+                'invoice_date',
+                'invoice_payment_term_id/name',
+                'ref',
+                'journal_id/name',
+                'amount_untaxed',
+                'amount_tax',
+                'amount_total',
+                'invoice_line_ids/name',
+                'invoice_line_ids/quantity',
+                'invoice_line_ids/price_unit',
+                'partner_bank_id',
+                'bc_manager_id/name',
+                'bc_spv_id/name',
+                'partner_id/contact_address',
+                'partner_id/contact_address_complete',
+                'narration',
+                'partner_id/vat',
+                'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'invoice_date_due',
+                'invoice_line_ids/duration_price',
+                'partner_id/.id',
                 'hrc_forminv_invoice_pic/name',
             ];
 
@@ -459,13 +501,15 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-                if (!isset($result['datas'])) continue;
+                if (!isset($result['datas']))
+                    continue;
 
                 $currentEntry = null;
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        if ($currentEntry !== null)
+                            $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -474,9 +518,9 @@ class OdooService
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? 'Invoice Other',
-                            'amount_untaxed' => (float)($row[6] ?? 0),
-                            'amount_tax' => (float)($row[7] ?? 0),
-                            'amount_total' => (float)($row[8] ?? 0),
+                            'amount_untaxed' => (float) ($row[6] ?? 0),
+                            'amount_tax' => (float) ($row[7] ?? 0),
+                            'amount_total' => (float) ($row[8] ?? 0),
                             'partner_bank' => $row[12] ?? '',
                             'manager_name' => $row[13] ?? '',
                             'spv_name' => $row[14] ?? '',
@@ -493,24 +537,27 @@ class OdooService
 
                     if ($currentEntry !== null) {
                         $lineDesc = $row[9] ?? '';
-                        $lineQty = (float)($row[10] ?? 0);
-                        $linePrice = (float)($row[11] ?? 0);
+                        $lineQty = (float) ($row[10] ?? 0);
+                        $linePrice = (float) ($row[11] ?? 0);
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             if (empty($currentEntry['contract_ref'])) {
-                                if (!empty($row[20])) $currentEntry['contract_ref'] = $row[20];
-                                elseif (!empty($row[21])) $currentEntry['contract_ref'] = $row[21];
+                                if (!empty($row[20]))
+                                    $currentEntry['contract_ref'] = $row[20];
+                                elseif (!empty($row[21]))
+                                    $currentEntry['contract_ref'] = $row[21];
                             }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
                                 'price_unit' => $linePrice,
-                                'duration_price' => (float)($row[23] ?? 0),
+                                'duration_price' => (float) ($row[23] ?? 0),
                             ];
                         }
                     }
                 }
-                if ($currentEntry !== null) $entries[] = $currentEntry;
+                if ($currentEntry !== null)
+                    $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
@@ -523,7 +570,8 @@ class OdooService
     public function fetchInvoiceOthers(string $dateFrom, string $dateTo): array
     {
         $res = $this->getInvoiceOtherIds($dateFrom, $dateTo);
-        if (!$res['success']) return $res;
+        if (!$res['success'])
+            return $res;
         return $this->fetchInvoiceOthersByIds($res['ids']);
     }
 
@@ -550,19 +598,37 @@ class OdooService
     public function fetchInvoiceVehiclesByIds(array $moveIds): array
     {
         try {
-            if (empty($moveIds)) return ['success' => true, 'data' => []];
+            if (empty($moveIds))
+                return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
-                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
-                'invoice_line_ids/name', 'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
-                'partner_bank_id', 'bc_manager_id/name', 'bc_spv_id/name',
-                'partner_id/contact_address', 'partner_id/contact_address_complete',
-                'invoice_line_ids/product_id/name', 'invoice_line_ids/serial_ids/name',
-                'partner_id/vat', 'narration', 'contract_ref',
+                'name',
+                'partner_id/name',
+                'invoice_date',
+                'invoice_payment_term_id/name',
+                'ref',
+                'journal_id/name',
+                'amount_untaxed',
+                'amount_tax',
+                'amount_total',
+                'invoice_line_ids/name',
+                'invoice_line_ids/quantity',
+                'invoice_line_ids/price_unit',
+                'partner_bank_id',
+                'bc_manager_id/name',
+                'bc_spv_id/name',
+                'partner_id/contact_address',
+                'partner_id/contact_address_complete',
+                'invoice_line_ids/product_id/name',
+                'invoice_line_ids/serial_ids/name',
+                'partner_id/vat',
+                'narration',
+                'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'invoice_line_ids/duration_price', 'partner_id/.id',
+                'invoice_date_due',
+                'invoice_line_ids/duration_price',
+                'partner_id/.id',
                 'hrc_forminv_invoice_pic/name',
             ];
 
@@ -572,13 +638,15 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-                if (!isset($result['datas'])) continue;
+                if (!isset($result['datas']))
+                    continue;
 
                 $currentEntry = null;
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        if ($currentEntry !== null)
+                            $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -587,9 +655,9 @@ class OdooService
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? '',
-                            'amount_untaxed' => (float)($row[6] ?? 0),
-                            'amount_tax' => (float)($row[7] ?? 0),
-                            'amount_total' => (float)($row[8] ?? 0),
+                            'amount_untaxed' => (float) ($row[6] ?? 0),
+                            'amount_tax' => (float) ($row[7] ?? 0),
+                            'amount_total' => (float) ($row[8] ?? 0),
                             'partner_bank' => $row[12] ?? '',
                             'manager_name' => $row[13] ?? '',
                             'spv_name' => $row[14] ?? '',
@@ -606,8 +674,8 @@ class OdooService
 
                     if ($currentEntry !== null) {
                         $lineDesc = $row[9] ?? '';
-                        $lineQty = (float)($row[10] ?? 0);
-                        $linePrice = (float)($row[11] ?? 0);
+                        $lineQty = (float) ($row[10] ?? 0);
+                        $linePrice = (float) ($row[11] ?? 0);
                         $productName = $row[17] ?? '';
                         $licensePlate = $row[18] ?? '';
                         $serialNumber = '';
@@ -617,8 +685,10 @@ class OdooService
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             if (empty($currentEntry['contract_ref'])) {
-                                if (!empty($row[22])) $currentEntry['contract_ref'] = $row[22];
-                                elseif (!empty($row[23])) $currentEntry['contract_ref'] = $row[23];
+                                if (!empty($row[22]))
+                                    $currentEntry['contract_ref'] = $row[22];
+                                elseif (!empty($row[23]))
+                                    $currentEntry['contract_ref'] = $row[23];
                             }
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
@@ -627,12 +697,13 @@ class OdooService
                                 'product_name' => $productName,
                                 'license_plate' => $licensePlate,
                                 'serial_number' => $serialNumber,
-                                'duration_price' => (float)($row[25] ?? 0),
+                                'duration_price' => (float) ($row[25] ?? 0),
                             ];
                         }
                     }
                 }
-                if ($currentEntry !== null) $entries[] = $currentEntry;
+                if ($currentEntry !== null)
+                    $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
@@ -645,7 +716,8 @@ class OdooService
     public function fetchInvoiceVehicles(string $dateFrom, string $dateTo): array
     {
         $res = $this->getInvoiceVehicleIds($dateFrom, $dateTo);
-        if (!$res['success']) return $res;
+        if (!$res['success'])
+            return $res;
         return $this->fetchInvoiceVehiclesByIds($res['ids']);
     }
 
@@ -672,8 +744,8 @@ class OdooService
             if (empty($allIds)) {
                 return [
                     'success' => true,
-                    'data'    => [],
-                    'count'   => 0,
+                    'data' => [],
+                    'count' => 0,
                     'message' => 'No subscription invoice periods found for the given date range.',
                 ];
             }
@@ -710,9 +782,9 @@ class OdooService
                 'invoice_id/hrc_forminv_invoice_pic/name',               // 28: PIC Name
             ];
 
-            $entries    = [];
-            $chunkSize  = 500;
-            $idChunks   = array_chunk($allIds, $chunkSize);
+            $entries = [];
+            $chunkSize = 500;
+            $idChunks = array_chunk($allIds, $chunkSize);
 
             foreach ($idChunks as $chunk) {
                 $result = $this->execute('rental.period.invoice', 'export_data', [$chunk, $exportFields]);
@@ -722,61 +794,63 @@ class OdooService
                 }
 
                 foreach ($result['datas'] as $row) {
-                    $rawId       = $row[0]  ?? '';
-                    $invoiceRef  = $row[12] ?? '';   // full display e.g. "INVRS/2025/03192 (refs...)"
+                    $rawId = $row[0] ?? '';
+                    $invoiceRef = $row[12] ?? '';   // full display e.g. "INVRS/2025/03192 (refs...)"
                     $invoiceName = $row[15] ?? '';   // clean name e.g. "INVRS/2025/03192"
-                    $rentalStatus = $row[3]  ?? null;
+                    $rentalStatus = $row[3] ?? null;
                     $invoiceState = $row[13] ?? null;
-                    $priceUnit    = (float)($row[16] ?? 0);
-                    $invoiceAmount = (float)($row[18] ?? 0);
+                    $priceUnit = (float) ($row[16] ?? 0);
+                    $invoiceAmount = (float) ($row[18] ?? 0);
 
                     // Skip cancelled rentals
-                    if ($rentalStatus === 'cancel' || $rentalStatus === 'cancelled') continue;
+                    if ($rentalStatus === 'cancel' || $rentalStatus === 'cancelled')
+                        continue;
 
                     // Skip if it has an invoice, but the Invoice Price is 0.
                     // If it has NO invoice (Not Invoiced), we keep it.
-                    if (!empty($invoiceName) && $invoiceAmount == 0) continue;
+                    if (!empty($invoiceName) && $invoiceAmount == 0)
+                        continue;
 
                     // Parse numeric ID from external ID string (e.g. __export__.rental_period_invoice_1903_hash)
                     $numericId = null;
                     if (preg_match('/rental_period_invoice_(\d+)_/', $rawId, $m)) {
-                        $numericId = (int)$m[1];
+                        $numericId = (int) $m[1];
                     }
 
                     $subStart = $row[5] ?? null;
                     $subEnd = $row[6] ?? null;
 
                     $entries[] = [
-                        'period_odoo_id'      => $rawId,
-                        'period_numeric_id'   => $numericId,
-                        'so_name'             => $row[1] ?? '',
-                        'partner_name'        => $row[2] ?? '',
-                        'rental_status'       => $rentalStatus,
-                        'rental_type'         => $row[4] ?? 'Subscription',
+                        'period_odoo_id' => $rawId,
+                        'period_numeric_id' => $numericId,
+                        'so_name' => $row[1] ?? '',
+                        'partner_name' => $row[2] ?? '',
+                        'rental_status' => $rentalStatus,
+                        'rental_type' => $row[4] ?? 'Subscription',
                         'actual_start_rental' => $subStart,
-                        'actual_end_rental'   => $subEnd,
-                        'period_type'         => $row[7] ?? '',
-                        'product_name'        => $row[8] ?? '',
-                        'invoice_date'        => $row[9] ?? null,
-                        'period_start'        => $row[10] ?? null,
-                        'period_end'          => $row[11] ?? null,
-                        'invoice_ref'         => $invoiceRef,
-                        'invoice_name'        => $invoiceName,
-                        'invoice_state'       => $invoiceState,
-                        'payment_state'       => $row[14] ?? null,
-                        'price_unit'          => $priceUnit,
-                        'invoice_amount'      => $invoiceAmount,
-                        'rental_uom'          => $row[17] ?? '',
-                        'license_plate'       => $row[19] ?? null,
-                        'customer_ref'        => $row[20] ?? null,
-                        'transaction_code'    => $row[21] ?? null,
-                        'due_date'            => $row[22] ?? null,
-                        'payment_date'        => $this->extractLatestPaymentDate($row[23] ?? null),
-                        'partner_address'     => $row[24] ?? '',
+                        'actual_end_rental' => $subEnd,
+                        'period_type' => $row[7] ?? '',
+                        'product_name' => $row[8] ?? '',
+                        'invoice_date' => $row[9] ?? null,
+                        'period_start' => $row[10] ?? null,
+                        'period_end' => $row[11] ?? null,
+                        'invoice_ref' => $invoiceRef,
+                        'invoice_name' => $invoiceName,
+                        'invoice_state' => $invoiceState,
+                        'payment_state' => $row[14] ?? null,
+                        'price_unit' => $priceUnit,
+                        'invoice_amount' => $invoiceAmount,
+                        'rental_uom' => $row[17] ?? '',
+                        'license_plate' => $row[19] ?? null,
+                        'customer_ref' => $row[20] ?? null,
+                        'transaction_code' => $row[21] ?? null,
+                        'due_date' => $row[22] ?? null,
+                        'payment_date' => $this->extractLatestPaymentDate($row[23] ?? null),
+                        'partner_address' => $row[24] ?? '',
                         'partner_address_complete' => $row[25] ?? '',
-                        'partner_npwp'        => $row[26] ?? '',
-                        'partner_id_odoo'     => $row[27] ?? null,
-                        'invoice_pic'         => $row[28] ?? '',
+                        'partner_npwp' => $row[26] ?? '',
+                        'partner_id_odoo' => $row[27] ?? null,
+                        'invoice_pic' => $row[28] ?? '',
                     ];
                 }
             }
@@ -785,14 +859,14 @@ class OdooService
 
             return [
                 'success' => true,
-                'data'    => $entries,
-                'count'   => count($entries),
+                'data' => $entries,
+                'count' => count($entries),
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'message' => 'Fetch failed: ' . $e->getMessage(),
-                'data'    => [],
+                'data' => [],
             ];
         }
     }
@@ -820,26 +894,47 @@ class OdooService
     public function fetchInvoiceRentalsByIds(array $moveIds): array
     {
         try {
-            if (empty($moveIds)) return ['success' => true, 'data' => []];
+            if (empty($moveIds))
+                return ['success' => true, 'data' => []];
 
             $exportFields = [
-                'name', 'partner_id/name', 'invoice_date', 'invoice_payment_term_id/name', 'ref',
-                'journal_id/name', 'amount_untaxed', 'amount_tax', 'amount_total',
-                'invoice_line_ids/sale_order_id/name', 'invoice_line_ids/name',
-                'invoice_line_ids/serial_ids/name', 'invoice_line_ids/start_rental_period',
-                'invoice_line_ids/end_rental_period', 'invoice_line_ids/sale_order_id/rental_uom',
-                'invoice_line_ids/quantity', 'invoice_line_ids/price_unit',
-                'invoice_line_ids/sale_order_id/customer_name', 'partner_bank_id',
-                'bc_manager_id/name', 'bc_spv_id/name', 'partner_id/contact_address',
-                'partner_id/contact_address_complete', 'narration',
+                'name',
+                'partner_id/name',
+                'invoice_date',
+                'invoice_payment_term_id/name',
+                'ref',
+                'journal_id/name',
+                'amount_untaxed',
+                'amount_tax',
+                'amount_total',
+                'invoice_line_ids/sale_order_id/name',
+                'invoice_line_ids/name',
+                'invoice_line_ids/serial_ids/name',
+                'invoice_line_ids/start_rental_period',
+                'invoice_line_ids/end_rental_period',
+                'invoice_line_ids/sale_order_id/rental_uom',
+                'invoice_line_ids/quantity',
+                'invoice_line_ids/price_unit',
+                'invoice_line_ids/sale_order_id/customer_name',
+                'partner_bank_id',
+                'bc_manager_id/name',
+                'bc_spv_id/name',
+                'partner_id/contact_address',
+                'partner_id/contact_address_complete',
+                'narration',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
-                'invoice_date_due', 'partner_id/vat', 'invoice_line_ids/rental_qty',
-                'invoice_line_ids/rental_uom', 'invoice_line_ids/duration_price',
+                'invoice_date_due',
+                'partner_id/vat',
+                'invoice_line_ids/rental_qty',
+                'invoice_line_ids/rental_uom',
+                'invoice_line_ids/duration_price',
                 'invoice_line_ids/product_id/name',
                 'invoice_line_ids/sale_order_id/actual_start_rental',
-                'invoice_line_ids/sale_order_id/actual_end_rental', 'partner_id/.id',
-                'contract_ref', 'hrc_forminv_invoice_pic/name'
+                'invoice_line_ids/sale_order_id/actual_end_rental',
+                'partner_id/.id',
+                'contract_ref',
+                'hrc_forminv_invoice_pic/name'
             ];
 
             $entries = [];
@@ -848,13 +943,15 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-                if (!isset($result['datas'])) continue;
+                if (!isset($result['datas']))
+                    continue;
 
                 $currentEntry = null;
                 foreach ($result['datas'] as $row) {
                     $invoiceName = $row[0] ?? '';
                     if (!empty($invoiceName)) {
-                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        if ($currentEntry !== null)
+                            $entries[] = $currentEntry;
                         $currentEntry = [
                             'name' => $invoiceName,
                             'partner_name' => $row[1] ?? '',
@@ -863,9 +960,9 @@ class OdooService
                             'payment_term' => $row[3] ?? '',
                             'ref' => $row[4] ?? '',
                             'journal_name' => $row[5] ?? '',
-                            'amount_untaxed' => (float)($row[6] ?? 0),
-                            'amount_tax' => (float)($row[7] ?? 0),
-                            'amount_total' => (float)($row[8] ?? 0),
+                            'amount_untaxed' => (float) ($row[6] ?? 0),
+                            'amount_tax' => (float) ($row[7] ?? 0),
+                            'amount_total' => (float) ($row[8] ?? 0),
                             'partner_bank' => $row[18] ?? '',
                             'manager_name' => $row[19] ?? '',
                             'spv_name' => $row[20] ?? '',
@@ -887,10 +984,10 @@ class OdooService
                         $actualStart = $row[12] ?? '';
                         $actualEnd = $row[13] ?? '';
                         $uom = !empty($row[29]) ? $row[29] : ($row[14] ?? '');
-                        $qty = (float)($row[15] ?? 0);
-                        $priceUnit = (float)($row[16] ?? 0);
+                        $qty = (float) ($row[15] ?? 0);
+                        $priceUnit = (float) ($row[16] ?? 0);
                         $customerName = !empty($row[17]) ? $row[17] : ($currentEntry['partner_name'] ?? '');
-                        $rentalQty = (float)($row[28] ?? 0);
+                        $rentalQty = (float) ($row[28] ?? 0);
                         $productName = $row[31] ?? '';
 
                         // Pull exact time from Rental Order only for INVRT (Retail). 
@@ -926,7 +1023,7 @@ class OdooService
                                 'quantity' => $qty,
                                 'rental_qty' => $rentalQty,
                                 'price_unit' => $priceUnit,
-                                'duration_price' => (float)($row[30] ?? 0),
+                                'duration_price' => (float) ($row[30] ?? 0),
                                 'customer_name' => $customerName,
                             ];
                         }
@@ -968,7 +1065,8 @@ class OdooService
     public function fetchInvoiceProformasByIds(array $moveIds): array
     {
         try {
-            if (empty($moveIds)) return ['success' => true, 'data' => []];
+            if (empty($moveIds))
+                return ['success' => true, 'data' => []];
 
             $exportFields = [
                 '.id', // Odoo ID (0)
@@ -1007,13 +1105,15 @@ class OdooService
 
             foreach ($moveIdsChunks as $chunk) {
                 $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
-                if (!isset($result['datas'])) continue;
+                if (!isset($result['datas']))
+                    continue;
 
                 $currentEntry = null;
                 foreach ($result['datas'] as $row) {
                     $odooId = $row[0] ?? '';
                     if (!empty($odooId)) {
-                        if ($currentEntry !== null) $entries[] = $currentEntry;
+                        if ($currentEntry !== null)
+                            $entries[] = $currentEntry;
                         $currentEntry = [
                             'odoo_id' => $odooId,
                             'name' => $row[1] ?? '',
@@ -1022,9 +1122,9 @@ class OdooService
                             'payment_term' => $row[4] ?? '',
                             'ref' => $row[5] ?? '',
                             'journal_name' => $row[6] ?? '',
-                            'amount_untaxed' => (float)($row[7] ?? 0),
-                            'amount_tax' => (float)($row[8] ?? 0),
-                            'amount_total' => (float)($row[9] ?? 0),
+                            'amount_untaxed' => (float) ($row[7] ?? 0),
+                            'amount_tax' => (float) ($row[8] ?? 0),
+                            'amount_total' => (float) ($row[9] ?? 0),
                             'partner_bank' => $row[13] ?? '',
                             'manager_name' => $row[14] ?? '',
                             'spv_name' => $row[15] ?? '',
@@ -1041,16 +1141,16 @@ class OdooService
 
                     if ($currentEntry !== null) {
                         $lineDesc = $row[10] ?? '';
-                        $lineQty = (float)($row[11] ?? 0);
-                        $linePrice = (float)($row[12] ?? 0);
+                        $lineQty = (float) ($row[11] ?? 0);
+                        $linePrice = (float) ($row[12] ?? 0);
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
                                 'price_unit' => $linePrice,
-                                'duration_price' => (float)($row[22] ?? 0),
-                                'rental_qty' => (float)($row[24] ?? 0),
+                                'duration_price' => (float) ($row[22] ?? 0),
+                                'rental_qty' => (float) ($row[24] ?? 0),
                                 'sale_order_id' => $row[25] ?? '',
                                 'serial_number' => $row[26] ?? '',
                                 'product_name' => $row[27] ?? '',
@@ -1058,7 +1158,8 @@ class OdooService
                         }
                     }
                 }
-                if ($currentEntry !== null) $entries[] = $currentEntry;
+                if ($currentEntry !== null)
+                    $entries[] = $currentEntry;
             }
 
             $this->enrichAddresses($entries);
@@ -1071,7 +1172,8 @@ class OdooService
     public function fetchInvoiceProformas(string $dateFrom, string $dateTo): array
     {
         $res = $this->getInvoiceProformaIds($dateFrom, $dateTo);
-        if (!$res['success']) return $res;
+        if (!$res['success'])
+            return $res;
         return $this->fetchInvoiceProformasByIds($res['ids']);
     }
     /**
@@ -1080,7 +1182,7 @@ class OdooService
     protected function authenticate(): ?int
     {
         $commonUrl = $this->url . '/xmlrpc/2/common';
-        
+
         $request = $this->xmlrpcEncode('authenticate', [
             $this->db,
             $this->user,
@@ -1090,12 +1192,12 @@ class OdooService
 
         $response = $this->sendRequest($commonUrl, $request);
         $result = $this->xmlrpcDecode($response);
-        
+
         if (is_array($result) && isset($result['faultCode'])) {
             throw new \Exception($result['faultString'] ?? 'Unknown XML-RPC error');
         }
 
-        $this->uid = is_numeric($result) ? (int)$result : null;
+        $this->uid = is_numeric($result) ? (int) $result : null;
         return $this->uid;
     }
 
@@ -1113,7 +1215,7 @@ class OdooService
         }
 
         $objectUrl = $this->url . '/xmlrpc/2/object';
-        
+
         $request = $this->xmlrpcEncode('execute_kw', [
             $this->db,
             $this->uid,
@@ -1152,15 +1254,19 @@ class OdooService
 
     protected function encodeValue($value): string
     {
-        if (is_null($value))  return '<value><nil/></value>';
-        if (is_bool($value))  return '<value><boolean>' . ($value ? '1' : '0') . '</boolean></value>';
-        if (is_int($value))   return '<value><int>' . $value . '</int></value>';
-        if (is_float($value)) return '<value><double>' . $value . '</double></value>';
-        
+        if (is_null($value))
+            return '<value><nil/></value>';
+        if (is_bool($value))
+            return '<value><boolean>' . ($value ? '1' : '0') . '</boolean></value>';
+        if (is_int($value))
+            return '<value><int>' . $value . '</int></value>';
+        if (is_float($value))
+            return '<value><double>' . $value . '</double></value>';
+
         if (is_string($value)) {
             return '<value><string>' . htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</string></value>';
         }
-        
+
         if (is_array($value)) {
             if ($this->isAssoc($value)) {
                 $xml = '<value><struct>';
@@ -1178,13 +1284,14 @@ class OdooService
                 return $xml;
             }
         }
-        
-        return '<value><string>' . htmlspecialchars((string)$value) . '</string></value>';
+
+        return '<value><string>' . htmlspecialchars((string) $value) . '</string></value>';
     }
 
     protected function isAssoc(array $arr): bool
     {
-        if (empty($arr)) return false;
+        if (empty($arr))
+            return false;
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
@@ -1192,7 +1299,7 @@ class OdooService
     {
         libxml_use_internal_errors(true);
         $doc = simplexml_load_string($xml);
-        
+
         if ($doc === false) {
             $errors = libxml_get_errors();
             libxml_clear_errors();
@@ -1214,16 +1321,16 @@ class OdooService
     protected function decodeValue($valueNode): mixed
     {
         if (isset($valueNode->int) || isset($valueNode->i4))
-            return (int)($valueNode->int ?? $valueNode->i4);
+            return (int) ($valueNode->int ?? $valueNode->i4);
         if (isset($valueNode->boolean))
-            return (string)$valueNode->boolean === '1';
+            return (string) $valueNode->boolean === '1';
         if (isset($valueNode->string))
-            return (string)$valueNode->string;
+            return (string) $valueNode->string;
         if (isset($valueNode->double))
-            return (float)$valueNode->double;
+            return (float) $valueNode->double;
         if (isset($valueNode->nil))
             return null;
-        
+
         if (isset($valueNode->array)) {
             $result = [];
             if (isset($valueNode->array->data->value)) {
@@ -1233,19 +1340,19 @@ class OdooService
             }
             return $result;
         }
-        
+
         if (isset($valueNode->struct)) {
             $result = [];
             if (isset($valueNode->struct->member)) {
                 foreach ($valueNode->struct->member as $member) {
-                    $name = (string)$member->name;
+                    $name = (string) $member->name;
                     $result[$name] = $this->decodeValue($member->value);
                 }
             }
             return $result;
         }
 
-        return (string)$valueNode;
+        return (string) $valueNode;
     }
 
     protected function sendRequest(string $url, string $body): string
@@ -1260,22 +1367,22 @@ class OdooService
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => 0,
         ]);
-        
+
         $response = curl_exec($ch);
-        
+
         if (curl_errno($ch)) {
             $error = curl_error($ch);
             curl_close($ch);
             throw new \Exception("cURL error: {$error}");
         }
-        
+
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode !== 200) {
             throw new \Exception("HTTP error {$httpCode}");
         }
-        
+
         return $response;
     }
 
@@ -1284,7 +1391,8 @@ class OdooService
      */
     private function extractLatestPaymentDate($widget): ?string
     {
-        if (!$widget) return null;
+        if (!$widget)
+            return null;
 
         // Widget can be a JSON string or an already parsed array (depending on RPC behavior)
         $data = is_string($widget) ? json_decode($widget, true) : $widget;
@@ -1297,7 +1405,7 @@ class OdooService
         foreach ($data['content'] as $payment) {
             if (isset($payment['date'])) {
                 if ($latestDate === null || $payment['date'] > $latestDate) {
-                    $latestDate = (string)$payment['date'];
+                    $latestDate = (string) $payment['date'];
                 }
             }
         }
@@ -1322,13 +1430,14 @@ class OdooService
                 // partner_id_odoo might be an ID or an array [id, name] depending on export behavior
                 $id = is_array($entry['partner_id_odoo']) ? $entry['partner_id_odoo'][0] : $entry['partner_id_odoo'];
                 if (is_numeric($id)) {
-                    $partnerIds[] = (int)$id;
+                    $partnerIds[] = (int) $id;
                 }
             }
         }
         $partnerIds = array_values(array_unique($partnerIds));
 
-        if (empty($partnerIds)) return;
+        if (empty($partnerIds))
+            return;
 
         // Fetch all child contacts of type 'invoice' for these partners
         // We fetch raw address fields so we can build the address ourselves
@@ -1337,7 +1446,8 @@ class OdooService
             ['parent_id', 'name', 'street', 'street2', 'city', 'state_id', 'zip', 'country_id', 'vat']
         ]);
 
-        if (empty($invoiceContacts)) return;
+        if (empty($invoiceContacts))
+            return;
 
         // Map parent_id => data (built from raw fields)
         $addressMap = [];
@@ -1345,34 +1455,42 @@ class OdooService
             $parentId = is_array($contact['parent_id']) ? $contact['parent_id'][0] : $contact['parent_id'];
 
             // If there are multiple invoice addresses, we take the first one found
-            if (isset($addressMap[$parentId])) continue;
+            if (isset($addressMap[$parentId]))
+                continue;
 
             $childName = $contact['name'] ?? '';
-            $street    = $contact['street'] ?? '';
-            $street2   = $contact['street2'] ?? '';
-            $city      = $contact['city'] ?? '';
-            $stateId   = $contact['state_id'] ?? null;
+            $street = $contact['street'] ?? '';
+            $street2 = $contact['street2'] ?? '';
+            $city = $contact['city'] ?? '';
+            $stateId = $contact['state_id'] ?? null;
             $stateName = is_array($stateId) ? ($stateId[1] ?? '') : '';
             // Remove country suffix like " (ID)" from state name for cleaner display
             $stateName = preg_replace('/\s*\([A-Z]{2}\)\s*$/', '', $stateName);
-            $zip       = $contact['zip'] ?? '';
+            $zip = $contact['zip'] ?? '';
             $countryId = $contact['country_id'] ?? null;
-            $country   = is_array($countryId) ? ($countryId[1] ?? '') : '';
-            $vat       = $contact['vat'] ?? '';
+            $country = is_array($countryId) ? ($countryId[1] ?? '') : '';
+            $vat = $contact['vat'] ?? '';
 
             // Build multiline address (matching Odoo's format)
             $addrLines = [];
-            if (!empty($street))     $addrLines[] = $street;
-            if (!empty($street2))    $addrLines[] = $street2;
+            if (!empty($street))
+                $addrLines[] = $street;
+            if (!empty($street2))
+                $addrLines[] = $street2;
 
             // City + State + Zip line
             $cityLine = '';
-            if (!empty($city))       $cityLine .= $city;
-            if (!empty($stateName))  $cityLine .= ' ' . $stateName;
-            if (!empty($zip))        $cityLine .= ' ' . $zip;
-            if (!empty(trim($cityLine))) $addrLines[] = trim($cityLine);
+            if (!empty($city))
+                $cityLine .= $city;
+            if (!empty($stateName))
+                $cityLine .= ' ' . $stateName;
+            if (!empty($zip))
+                $cityLine .= ' ' . $zip;
+            if (!empty(trim($cityLine)))
+                $addrLines[] = trim($cityLine);
 
-            if (!empty($country))    $addrLines[] = $country;
+            if (!empty($country))
+                $addrLines[] = $country;
 
             $addr = implode("\n", $addrLines);
 
@@ -1382,9 +1500,9 @@ class OdooService
 
             if (!empty($addr)) {
                 $addressMap[$parentId] = [
-                    'address'          => $addr,
+                    'address' => $addr,
                     'address_complete' => $addrComplete,
-                    'vat'              => $vat,
+                    'vat' => $vat,
                 ];
             }
         }
@@ -1411,7 +1529,7 @@ class OdooService
     {
         $domainEmpty = [['invoice_id', '=', false]];
         $domainDraft = [['invoice_id.state', '=', 'draft']];
-        
+
         if ($dateFrom) {
             $domainEmpty[] = ['invoice_date', '>=', $dateFrom];
             $domainDraft[] = ['invoice_date', '>=', $dateFrom];
@@ -1432,14 +1550,14 @@ class OdooService
                 ['rental_order_id', 'invoice_date:min'],
                 ['rental_order_id']
             ]);
-            
+
             $soIds = [];
             foreach (array_merge($resEmpty, $resDraft) as $group) {
                 if (!empty($group['rental_order_id'][0])) {
                     $soIds[] = $group['rental_order_id'][0];
                 }
             }
-            
+
             return array_values(array_unique($soIds));
         } catch (\Exception $e) {
             return [];
@@ -1455,7 +1573,7 @@ class OdooService
             ['invoice_id', '=', false],
             ['rental_order_id', 'in', $soIds]
         ];
-        
+
         $domainDraft = [
             ['invoice_id.state', '=', 'draft'],
             ['rental_order_id', 'in', $soIds]
@@ -1464,7 +1582,7 @@ class OdooService
         // Fetch periods
         $periodIdsEmpty = $this->execute('rental.period.invoice', 'search', [$domainEmpty]);
         $periodIdsDraft = $this->execute('rental.period.invoice', 'search', [$domainDraft]);
-        
+
         $periodIds = array_values(array_unique(array_merge($periodIdsEmpty, $periodIdsDraft)));
         if (empty($periodIds)) {
             return [];
@@ -1478,23 +1596,24 @@ class OdooService
             'lot_id',
             'product_id',
         ];
-        
+
         $periods = $this->execute('rental.period.invoice', 'read', [$periodIds, $fields]);
-        
+
         // Group by rental_order_id and find the earliest invoice_date
         $grouped = [];
         foreach ($periods as $period) {
             $soId = $period['rental_order_id'][0] ?? null;
-            if (!$soId) continue;
-            
+            if (!$soId)
+                continue;
+
             if (!isset($grouped[$soId]) || $period['invoice_date'] < $grouped[$soId]['invoice_date']) {
                 $grouped[$soId] = $period;
             }
         }
-        
+
         $earliestPeriods = array_values($grouped);
         $soIdsToFetch = array_keys($grouped);
-        
+
         // Fetch SO Data
         $soFields = [
             'name',
@@ -1512,7 +1631,7 @@ class OdooService
             'sale_invoice_period_id',
             'order_line',
         ];
-        
+
         $soData = $this->execute('sale.order', 'read', [$soIdsToFetch, $soFields]);
         $soMap = [];
         $partnerIdsToFetch = [];
@@ -1522,17 +1641,17 @@ class OdooService
                 $partnerIdsToFetch[] = $so['partner_id'][0];
             }
         }
-        
+
         $productIdsToFetch = [];
         foreach ($earliestPeriods as $period) {
             if (!empty($period['product_id'][0])) {
                 $productIdsToFetch[] = $period['product_id'][0];
             }
         }
-        
+
         $partnerIdsToFetch = array_values(array_unique($partnerIdsToFetch));
         $productIdsToFetch = array_values(array_unique($productIdsToFetch));
-        
+
         // Fetch Partner Data
         $partnerFields = [
             'partner_bank_id',
@@ -1554,7 +1673,7 @@ class OdooService
         foreach ($partnerData as $p) {
             $partnerMap[$p['id']] = $p;
         }
-        
+
         // Fetch Lot Data
         $lotIdsToFetch = [];
         foreach ($earliestPeriods as $period) {
@@ -1563,7 +1682,7 @@ class OdooService
             }
         }
         $lotIdsToFetch = array_values(array_unique($lotIdsToFetch));
-        
+
         $lotFields = [
             'name',
             'ref',
@@ -1577,10 +1696,10 @@ class OdooService
         foreach ($lotData as $lot) {
             $lotMap[$lot['id']] = $lot;
         }
-        
+
         // Fetch Product Data (if product_id is needed for Model)
         // No longer needed, we map directly from $period['product_id'][1]
-        
+
         // Fetch Contract Data
         $contractIdsToFetch = [];
         foreach ($soData as $so) {
@@ -1589,7 +1708,7 @@ class OdooService
             }
         }
         $contractIdsToFetch = array_values(array_unique($contractIdsToFetch));
-        
+
         $contractFields = ['reference'];
         $contractData = [];
         if (!empty($contractIdsToFetch)) {
@@ -1599,7 +1718,7 @@ class OdooService
         foreach ($contractData as $c) {
             $contractMap[$c['id']] = $c;
         }
-        
+
         // Fetch Order Line Data for Duration Price
         $orderLineIdsToFetch = [];
         foreach ($soData as $so) {
@@ -1608,7 +1727,7 @@ class OdooService
             }
         }
         $orderLineIdsToFetch = array_values(array_unique($orderLineIdsToFetch));
-        
+
         $lineData = [];
         if (!empty($orderLineIdsToFetch)) {
             $lineData = $this->execute('sale.order.line', 'read', [$orderLineIdsToFetch, ['product_id', 'duration_price', 'order_id']]);
@@ -1624,22 +1743,22 @@ class OdooService
                 $durationPriceMap[$soId][$productId] = $line['duration_price'] ?? 0;
             }
         }
-        
+
         // Assemble final output
         $results = [];
         foreach ($earliestPeriods as $period) {
             $soId = $period['rental_order_id'][0] ?? null;
             $so = $soMap[$soId] ?? [];
-            
+
             $partnerId = $so['partner_id'][0] ?? null;
             $partner = $partnerMap[$partnerId] ?? [];
-            
+
             $lotId = $period['lot_id'][0] ?? null;
             $lot = $lotMap[$lotId] ?? [];
-            
+
             // Extract Kode Cust (Now displaying full customer name)
             $kodeCust = $so['partner_id'][1] ?? '';
-            
+
             $results[] = [
                 'kode_cust' => $kodeCust === false ? '' : $kodeCust,
                 'nomor_so' => ($so['name'] ?? '') === false ? '' : ($so['name'] ?? ''),
@@ -1647,38 +1766,37 @@ class OdooService
                 'nomor_kontrak' => ($so['rental_contract_id'][1] ?? '') === false ? '' : ($so['rental_contract_id'][1] ?? ''),
                 'kontrak_ref' => ($contractMap[$so['rental_contract_id'][0] ?? null]['reference'] ?? '') === false ? '' : ($contractMap[$so['rental_contract_id'][0] ?? null]['reference'] ?? ''),
                 'nama_user' => ($so['customer_name'] ?? '') === false ? '' : ($so['customer_name'] ?? ''),
-                
-                'nopol' => ($lot['name'] ?? '') === false ? '' : ($lot['name'] ?? ''),
-                'model' => (function($str) {
-                    if ($str === false) return '';
+
+                'nopol' => $lot['name'] ?? '',
+                'model' => (function ($str) {
                     if (preg_match('/\[(.*?)\]/', $str, $matches)) {
                         return str_replace('-', '', $matches[1]);
                     }
                     return str_replace('-', '', $str);
                 })($period['product_id'][1] ?? ''),
-                'tahun_mobil' => ($lot['vehicle_year'] ?? '') === false ? '' : ($lot['vehicle_year'] ?? ''),
-                'chassis' => ($lot['ref'] ?? '') === false ? '' : ($lot['ref'] ?? ''),
-                
+                'tahun_mobil' => $lot['vehicle_year'] ?? '',
+                'chassis' => $lot['ref'] ?? '',
+
                 'start' => !empty($so['actual_start_rental']) ? \Carbon\Carbon::parse($so['actual_start_rental'], 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : '',
                 'end' => !empty($so['actual_end_rental']) ? \Carbon\Carbon::parse($so['actual_end_rental'], 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : '',
-                'tanggal_periode_belum_cetak' => ($period['invoice_date'] ?? '') === false ? '' : ($period['invoice_date'] ?? ''),
+                'tanggal_periode_belum_cetak' => $period['invoice_date'] ?? '',
                 'price_di_so' => $durationPriceMap[$soId][$period['product_id'][0] ?? null] ?? $period['price_unit'] ?? 0,
-                'invoice_period' => ($so['sale_invoice_period_id'][1] ?? '') === false ? '' : ($so['sale_invoice_period_id'][1] ?? ''),
-                'payment_terms' => ($so['payment_term_id'][1] ?? '') === false ? '' : ($so['payment_term_id'][1] ?? ''),
-                'rental_method' => ($so['rental_method'] ?? '') === false ? '' : ucwords(str_replace('_', ' ', $so['rental_method'] ?? '')),
-                'first_invoice_date' => ($so['first_invoice_date'] ?? '') === false ? '' : ($so['first_invoice_date'] ?? ''),
-                
-                'area_pemakaian_unit' => ($so['area_id'][1] ?? '') === false ? '' : ($so['area_id'][1] ?? ''),
-                'invoice_pic' => ($partner['hrc_forminv_invoice_pic'][1] ?? '') === false ? '' : ($partner['hrc_forminv_invoice_pic'][1] ?? ''),
-                'recipient_bank' => ($partner['partner_bank_id'][1] ?? '') === false ? '' : ($partner['partner_bank_id'][1] ?? ''),
-                'tax_id' => ($partner['vat'] ?? '') === false ? '' : ($partner['vat'] ?? ''),
-                'id_tku' => ($partner['tku_number'] ?? '') === false ? '' : ($partner['tku_number'] ?? ''),
-                'kode_transaksi' => ($partner['l10n_id_kode_transaksi'] ?? '') === false ? '' : ($partner['l10n_id_kode_transaksi'] ?? ''),
-                'address' => ($partner['contact_address'] ?? '') === false ? '' : ($partner['contact_address'] ?? ''),
-                'tax_address' => ($partner['l10n_id_tax_address'] ?? '') === false ? '' : ($partner['l10n_id_tax_address'] ?? ''),
+                'invoice_period' => $so['sale_invoice_period_id'][1] ?? '',
+                'payment_terms' => $so['payment_term_id'][1] ?? '',
+                'rental_method' => ucwords(str_replace('_', ' ', $so['rental_method'] ?? '')),
+                'first_invoice_date' => $so['first_invoice_date'] ?? '',
+
+                'area_pemakaian_unit' => $so['area_id'][1] ?? '',
+                'invoice_pic' => $partner['hrc_forminv_invoice_pic'][1] ?? '',
+                'recipient_bank' => $partner['partner_bank_id'][1] ?? '',
+                'tax_id' => $partner['vat'] ?? '',
+                'id_tku' => $partner['tku_number'] ?? '',
+                'kode_transaksi' => $partner['l10n_id_kode_transaksi'] ?? '',
+                'address' => $partner['contact_address'] ?? '',
+                'tax_address' => $partner['l10n_id_tax_address'] ?? '',
             ];
         }
-        
+
         return $results;
     }
 }

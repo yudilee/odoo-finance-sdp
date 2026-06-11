@@ -323,7 +323,7 @@
                 $pphLines->contains('id', $l->id) ||
                 $noteLines->contains('id', $l->id) ||
                 (isset($dppLine) && $l->id === $dppLine->id)
-            )->values();
+            )->sortBy('actual_start')->values();
 
             $displayLines = collect();
             if (isset($printMode) && $printMode === 'summary' && (str_starts_with($invoice->name, 'INVRS') || str_starts_with($invoice->name, 'INVRT'))) {

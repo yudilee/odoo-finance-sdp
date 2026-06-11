@@ -36,6 +36,11 @@ Illuminate\Support\Facades\Schedule::command('app:sync-odoo')->when(function () 
 // Database Maintenance (Vacuum, Analyze, Prune Logs)
 Illuminate\Support\Facades\Schedule::command('db:maintenance')->dailyAt('03:00')->runInBackground();
 
+// Auto Sync Uninvoiced Rentals every 30 minutes
+Illuminate\Support\Facades\Schedule::command('app:sync-uninvoiced-rentals')->when(function () {
+    return \App\Models\Setting::getValue('uninvoiced_rentals_auto_sync_enabled', 'false') === 'true';
+})->everyThirtyMinutes()->runInBackground();
+
 // Automatic Database Backups (Linked to UI Settings)
 Illuminate\Support\Facades\Schedule::command('app:backup-db')->when(function () {
     $schedule = \App\Models\BackupSchedule::first();

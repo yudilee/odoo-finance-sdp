@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UninvoicedRental;
+use App\Models\Setting;
 use App\Services\OdooService;
 use App\Services\SyncService;
 use Illuminate\Http\Request;
@@ -53,8 +54,24 @@ class UninvoicedRentalController extends Controller
         if (!in_array($perPage, [10, 25, 50, 100])) $perPage = 25;
 
         $rentals = $query->paginate($perPage)->withQueryString();
+        
+        $autoSyncEnabled = Setting::getValue('uninvoiced_rentals_auto_sync_enabled', 'false') === 'true';
 
-        return view('uninvoiced-rentals.index', compact('rentals', 'sort', 'dir', 'perPage'));
+        return view('uninvoiced-rentals.index', compact('rentals', 'sort', 'dir', 'perPage', 'autoSyncEnabled'));
+    }
+
+    /**
+     * Toggle Auto Sync Setting
+     */
+    public function toggleAutoSync(Request $request)
+    {
+        $enabled = $request->boolean('enabled');
+        Setting::setValue('uninvoiced_rentals_auto_sync_enabled', $enabled ? 'true' : 'false');
+        
+        return response()->json([
+            'success' => true,
+            'enabled' => $enabled
+        ]);
     }
 
     /**

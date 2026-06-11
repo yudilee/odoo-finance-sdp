@@ -468,6 +468,20 @@
                             <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
                         </div>
                     </label>
+
+                    <label class="option-card p-4 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 bg-white border-slate-100 hover:border-slate-200" data-value="summary">
+                        <input type="radio" name="print_type" value="summary" class="hidden">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-sm">Invoice with summary only</h4>
+                            <p class="text-[11px] text-slate-500">Compact one-line per item summary.</p>
+                        </div>
+                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slate-200 flex items-center justify-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+                        </div>
+                    </label>
                 </div>
             </div>
             <style>
