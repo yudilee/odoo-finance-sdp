@@ -518,4 +518,53 @@ class InvoiceRentalController extends Controller
         ]);
     }
 
+    /**
+     * Refresh a single invoice from Odoo (quick re-sync)
+     */
+    public function refreshFromOdoo(InvoiceRental $invoice)
+    {
+        try {
+            $odoo = new OdooService();
+
+            // Search for this invoice's Odoo ID by name
+            $domain = [
+                ['state', '=', 'posted'],
+                ['name', '=', $invoice->name],
+            ];
+            $ids = $odoo->execute('account.move', 'search', [$domain]);
+
+            if (empty($ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invoice not found in Odoo: ' . $invoice->name
+                ]);
+            }
+
+            // Fetch the full data for this single invoice
+            $result = $odoo->fetchInvoiceRentalsByIds($ids);
+
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch invoice data from Odoo.'
+                ]);
+            }
+
+            // Save/update the invoice locally
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceRentals($result['data']);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Refreshed {$invoice->name} successfully.",
+                'count' => $savedCount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refresh failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }

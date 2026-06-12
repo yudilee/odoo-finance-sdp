@@ -53,7 +53,7 @@ function showPrintOptions() {
             let baseUrl = "{{ route('invoice-vehicle.print', $invoice) }}";
             let htmlUrl = baseUrl.replace('/pdf', '/html') + '?print_mode=' + result.value + '&show_username=0';
             let pdfUrl = baseUrl + '?print_mode=' + result.value + '&show_username=0';
-            window.showInvoicePreviewModal(htmlUrl, pdfUrl);
+            window.showInvoicePreviewModal(htmlUrl, pdfUrl, baseUrl.replace('/pdf', '/refresh'));
         }
     });
 }

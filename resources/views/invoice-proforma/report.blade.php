@@ -264,7 +264,17 @@
                 @forelse($invoices as $invoice)
                 <tr class="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td x-show="columns.proforma_number.visible" class="px-4 py-2 font-mono text-xs font-semibold whitespace-nowrap">
-                        <a href="javascript:void(0)" onclick="previewProforma('{{ route('invoice-proforma.print', $invoice) }}')" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline">
+                        @php
+                            $printQuery = '';
+                            if ($invoice->last_print_mode === 'summary') {
+                                $printQuery = '?print_mode=summary';
+                            } elseif ($invoice->last_print_mode === 'without_nopol') {
+                                $printQuery = '?hide_nopol=1';
+                            } elseif ($invoice->last_print_mode === 'detail_username') {
+                                $printQuery = '?show_username=1';
+                            }
+                        @endphp
+                        <a href="javascript:void(0)" onclick="previewProforma('{{ route('invoice-proforma.print', $invoice) }}{{ $printQuery }}')" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline">
                             {{ $invoice->proforma_number }}
                         </a>
                     </td>

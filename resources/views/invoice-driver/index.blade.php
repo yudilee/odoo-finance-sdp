@@ -474,7 +474,7 @@
                     htmlUrl += '?print_mode=detail&show_username=0';
                     pdfUrl += '?print_mode=detail&show_username=0';
                 }
-                window.showInvoicePreviewModal(htmlUrl, pdfUrl);
+                window.showInvoicePreviewModal(htmlUrl, pdfUrl, url.replace('/pdf', '/refresh'));
             }
         });
     }

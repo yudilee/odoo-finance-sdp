@@ -255,37 +255,8 @@
                         pdfUrl += '?print_mode=detail&show_username=0';
                     }
 
-                    // Show preview in a popup modal with iframe
-                    Swal.fire({
-                        html: `
-                            <div style="margin:0 -20px 0 -20px;">
-                                <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
-                                    <span style="color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;">
-                                        <span style="background-color:#fef08a;width:12px;height:12px;border-radius:3px;display:inline-block;"></span> = Rate anomaly (internal only, hidden in PDF)
-                                    </span>
-                                    <div style="display:flex;align-items:center;gap:12px;">
-                                        <a href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            Download PDF (Clean)
-                                        </a>
-                                        <button onclick="Swal.close()" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:9999px;transition:all 0.2s;" onmouseover="this.style.color='#f8fafc';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
-                                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <iframe src="${htmlUrl}" style="width:100%;height:78vh;border:none;display:block;"></iframe>
-                            </div>
-                        `,
-                        width: '900px',
-                        padding: '0',
-                        showConfirmButton: false,
-                        showCloseButton: false,
-                        customClass: {
-                            popup: 'swal-preview-popup'
-                        }
-                    });
+                    // Show preview in a popup modal with iframe (uses shared function with Refresh button)
+                    window.showInvoicePreviewModal(htmlUrl, pdfUrl, url.replace('/pdf', '/refresh'));
                 }
             });
         } else {

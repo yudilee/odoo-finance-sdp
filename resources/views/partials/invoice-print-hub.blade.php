@@ -3,6 +3,9 @@
     Provides shared JS functions for printing invoices directly to Print Hub.
     Include via @include('partials.invoice-print-hub') on any invoice show/index page.
 --}}
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
 <div id="invoice-hub-toast" class="fixed top-4 right-4 z-[200] pointer-events-none" style="display:none">
     <div id="invoice-hub-toast-inner"
          class="flex items-center gap-2 px-4 py-2.5 rounded-full text-white text-xs font-bold shadow-2xl transition-all duration-300"
@@ -222,17 +225,48 @@
         });
     }
 
+    window.toggleSatuan = function(isChecked) {
+        const iframe = document.getElementById('invoicePreviewIframe');
+        const dlBtn = document.getElementById('downloadPdfBtn');
+        const refreshBtn = document.getElementById('refreshOdooBtn');
+        
+        const updateUrl = (urlStr) => {
+            if (!urlStr) return urlStr;
+            let url = new URL(urlStr, urlStr.startsWith('http') ? undefined : window.location.origin);
+            if (isChecked) {
+                url.searchParams.set('without_satuan', '1');
+            } else {
+                url.searchParams.delete('without_satuan');
+            }
+            return url.pathname + url.search;
+        };
+
+        if (iframe) iframe.src = updateUrl(iframe.src);
+        if (dlBtn) dlBtn.href = updateUrl(dlBtn.href);
+        if (refreshBtn) refreshBtn.dataset.htmlUrl = updateUrl(refreshBtn.dataset.htmlUrl);
+    };
+
     /* ---------- preview modal (iframe) ---------- */
-    window.showInvoicePreviewModal = function(htmlUrl, pdfUrl) {
+    window.showInvoicePreviewModal = function(htmlUrl, pdfUrl, refreshUrl) {
+        const isTargetInvoice = /invoice-(driver|other|vehicle|proforma)/.test(htmlUrl);
         Swal.fire({
             html: `
                 <div style="margin:0 -20px 0 -20px;">
                     <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
                         <span style="color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;">
                             <span style="background-color:#fef08a;width:12px;height:12px;border-radius:3px;display:inline-block;"></span> = Rate anomaly (internal only, hidden in PDF)
+                            ${isTargetInvoice ? `
+                            <label style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;display:flex;align-items:center;gap:6px;cursor:pointer;color:#e2e8f0;font-weight:600;">
+                                <input type="checkbox" id="withoutSatuanCheckbox" onchange="window.toggleSatuan(this.checked)" style="cursor:pointer;" ${htmlUrl.includes('without_satuan=1') ? 'checked' : ''} /> Without SATUAN
+                            </label>
+                            ` : ''}
                         </span>
                         <div style="display:flex;align-items:center;gap:12px;">
-                            <a href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                            ${refreshUrl ? `<button id="refreshOdooBtn" onclick="window._refreshFromOdoo(this)" data-url="${refreshUrl}" data-html-url="${htmlUrl}" style="background:#f59e0b;color:white;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Refresh from Odoo
+                            </button>` : ''}
+                            <a id="downloadPdfBtn" href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 Download PDF (Clean)
                             </a>
@@ -243,7 +277,7 @@
                             </button>
                         </div>
                     </div>
-                    <iframe src="${htmlUrl}" style="width:100%;height:78vh;border:none;display:block;"></iframe>
+                    <iframe id="invoicePreviewIframe" src="${htmlUrl}" style="width:100%;height:78vh;border:none;display:block;"></iframe>
                 </div>
             `,
             width: '900px',
@@ -254,6 +288,62 @@
                 popup: 'swal-preview-popup'
             }
         });
+    };
+
+    /* ---------- Refresh from Odoo handler ---------- */
+    window._refreshFromOdoo = async function(btn) {
+        const url = btn.dataset.url;
+        const htmlUrl = btn.dataset.htmlUrl;
+        const origText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/><path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Refreshing...`;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await res.json();
+            if (data.success) {
+                btn.style.background = '#10b981';
+                btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Updated!`;
+                // Reload the iframe to show updated data
+                const iframe = document.getElementById('invoicePreviewIframe');
+                if (iframe) {
+                    iframe.src = htmlUrl + (htmlUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                }
+                setTimeout(() => {
+                    btn.innerHTML = origText;
+                    btn.style.background = '#f59e0b';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }, 2000);
+            } else {
+                btn.style.background = '#ef4444';
+                btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> ${data.message || 'Failed'}`;
+                setTimeout(() => {
+                    btn.innerHTML = origText;
+                    btn.style.background = '#f59e0b';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }, 3000);
+            }
+        } catch (e) {
+            btn.style.background = '#ef4444';
+            btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Connection error`;
+            setTimeout(() => {
+                btn.innerHTML = origText;
+                btn.style.background = '#f59e0b';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }, 3000);
+        }
     };
 })();
 </script>

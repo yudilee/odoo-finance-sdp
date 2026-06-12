@@ -488,7 +488,7 @@
                                     @php
                                         $displayQty = ($line->rental_qty > 0) ? $line->rental_qty : $line->quantity;
                                     @endphp
-                                    @if($displayQty > 0)
+                                    @if($displayQty > 0 && !request('without_satuan'))
                                         {{ ($displayQty == (int)$displayQty) ? number_format($displayQty, 0, '.', ',') : rtrim(rtrim(number_format($displayQty, 4, '.', ','), '0'), '.') }} Org.
                                     @endif
                                 @endif
@@ -656,12 +656,13 @@
         </div>
     @endforeach
 
-    @if(!isset($printMode) || $printMode !== 'summary')
     <script type="text/php">
         if (isset($pdf)) {
             $pdf->page_script('
                 $starts = $GLOBALS["invoice_starts"] ?? [];
                 asort($starts);
+                
+                @if(!isset($printMode) || $printMode !== "summary")
                 $invoiceStartPage = 1;
                 foreach ($starts as $name => $startPage) {
                     if ($PAGE_NUM >= $startPage) {
@@ -670,12 +671,10 @@
                 }
                 $localPageNum = $PAGE_NUM - $invoiceStartPage + 1;
                 $font = $fontMetrics->get_font("helvetica", "normal");
-                
-                // Print Hal: X
                 $text = "Hal : " . $localPageNum;
                 $pdf->text(524, 65, $text, $font, 9, array(0.39, 0.45, 0.55));
+                @endif
                 
-                // Print PIC Watermark
                 $currentInvoiceName = null;
                 foreach ($starts as $name => $startPage) {
                     if ($PAGE_NUM >= $startPage) {
@@ -706,7 +705,6 @@
             ');
         }
     </script>
-    @endif
 
     @if(isset($isHtml) && $isHtml)
         <script>

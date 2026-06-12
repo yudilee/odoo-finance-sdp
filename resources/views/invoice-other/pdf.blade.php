@@ -502,7 +502,7 @@
                     @if($showUnitColumn)
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if($line->quantity > 0)
+                            @if($line->quantity > 0 && !request('without_satuan'))
                                 {{ number_format($line->quantity, 0) }}
                             @endif
                         @endif
@@ -705,12 +705,13 @@
     </div>
     @endforeach
 
-    @if(!isset($printMode) || $printMode !== 'summary')
     <script type="text/php">
         if (isset($pdf)) {
             $pdf->page_script('
                 $starts = $GLOBALS["invoice_starts"] ?? [];
                 asort($starts);
+                
+                @if(!isset($printMode) || $printMode !== "summary")
                 $invoiceStartPage = 1;
                 foreach ($starts as $name => $startPage) {
                     if ($PAGE_NUM >= $startPage) {
@@ -719,12 +720,10 @@
                 }
                 $localPageNum = $PAGE_NUM - $invoiceStartPage + 1;
                 $font = $fontMetrics->get_font("helvetica", "normal");
-                
-                // Print Hal: X
                 $text = "Hal : " . $localPageNum;
                 $pdf->text(524, 65, $text, $font, 9, array(0.39, 0.45, 0.55));
+                @endif
                 
-                // Print PIC Watermark
                 $currentInvoiceName = null;
                 foreach ($starts as $name => $startPage) {
                     if ($PAGE_NUM >= $startPage) {
@@ -755,7 +754,6 @@
             ');
         }
     </script>
-    @endif
 
     @if(isset($isHtml) && $isHtml)
     <script>

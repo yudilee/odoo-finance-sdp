@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/html', [InvoiceDriverController::class, 'printHtml'])->name('print-html');
         Route::get('/{invoice}/kuitansi-pdf', [InvoiceDriverController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
         Route::get('/{invoice}/kuitansi-html', [InvoiceDriverController::class, 'kuitansiHtml'])->name('kuitansi-html');
+        Route::post('/{invoice}/refresh', [InvoiceDriverController::class, 'refreshFromOdoo'])->name('refresh');
     });
 
     // Invoice Other
@@ -94,6 +95,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/html', [InvoiceOtherController::class, 'printHtml'])->name('print-html');
         Route::get('/{invoice}/kuitansi-pdf', [InvoiceOtherController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
         Route::get('/{invoice}/kuitansi-html', [InvoiceOtherController::class, 'kuitansiHtml'])->name('kuitansi-html');
+        Route::post('/{invoice}/refresh', [InvoiceOtherController::class, 'refreshFromOdoo'])->name('refresh');
     });
 
     // Invoice Rental
@@ -109,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/html', [InvoiceRentalController::class, 'printHtml'])->name('print-html');
         Route::get('/{invoice}/kuitansi-pdf', [InvoiceRentalController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
         Route::get('/{invoice}/kuitansi-html', [InvoiceRentalController::class, 'kuitansiHtml'])->name('kuitansi-html');
+        Route::post('/{invoice}/refresh', [InvoiceRentalController::class, 'refreshFromOdoo'])->name('refresh');
     });
 
     // Invoice Proforma (Draft Invoices)
@@ -123,6 +126,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', [InvoiceProformaController::class, 'show'])->name('show');
         Route::get('/{invoice}/pdf', [InvoiceProformaController::class, 'printPdf'])->name('print');
         Route::get('/{invoice}/html', [InvoiceProformaController::class, 'printHtml'])->name('print-html');
+        Route::post('/{invoice}/refresh', [InvoiceProformaController::class, 'refreshFromOdoo'])->name('refresh');
     });
 
     // Invoice Vehicle (Penjualan Kendaraan)
@@ -138,6 +142,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/html', [InvoiceVehicleController::class, 'printHtml'])->name('print-html');
         Route::get('/{invoice}/kuitansi-pdf', [InvoiceVehicleController::class, 'kuitansiPdf'])->name('kuitansi-pdf');
         Route::get('/{invoice}/kuitansi-html', [InvoiceVehicleController::class, 'kuitansiHtml'])->name('kuitansi-html');
+        Route::post('/{invoice}/refresh', [InvoiceVehicleController::class, 'refreshFromOdoo'])->name('refresh');
     });
 
     // Invoice Subscription (Check Invoice Subscription – Rental Periods)

@@ -352,6 +352,7 @@ class OdooService
                 'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due',
                 'invoice_line_ids/duration_price',
                 'partner_id/.id',
                 'invoice_line_ids/rental_qty',
@@ -1608,6 +1609,11 @@ class OdooService
             $soId = $period['rental_order_id'][0] ?? null;
             if (!$soId)
                 continue;
+
+            // Ignore periods with zero invoice price
+            if (($period['price_unit'] ?? 0) <= 0) {
+                continue;
+            }
 
             if (!isset($grouped[$soId]) || $period['invoice_date'] < $grouped[$soId]['invoice_date']) {
                 $grouped[$soId] = $period;
