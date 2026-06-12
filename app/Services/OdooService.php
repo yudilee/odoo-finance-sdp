@@ -1595,6 +1595,9 @@ class OdooService
             'rental_uom',
             'lot_id',
             'product_id',
+            'invoice_id',
+            'start_rental_period_date',
+            'end_rental_period_date',
         ];
 
         $periods = $this->execute('rental.period.invoice', 'read', [$periodIds, $fields]);
@@ -1735,12 +1738,41 @@ class OdooService
         $durationPriceMap = [];
         foreach ($lineData as $line) {
             $soId = $line['order_id'][0] ?? null;
-            $productId = $line['product_id'][0] ?? null;
-            if ($soId && $productId) {
+            $productName = $line['product_id'][1] ?? null;
+            if ($soId && $productName) {
                 if (!isset($durationPriceMap[$soId])) {
                     $durationPriceMap[$soId] = [];
                 }
-                $durationPriceMap[$soId][$productId] = $line['duration_price'] ?? 0;
+                $durationPriceMap[$soId][$productName] = $line['duration_price'] ?? 0;
+            }
+        }
+
+        // Fetch account.move.line data to get Duration Price directly from the Invoices
+        $invoiceIdsToFetch = [];
+        foreach ($earliestPeriods as $period) {
+            if (!empty($period['invoice_id'][0])) {
+                $invoiceIdsToFetch[] = $period['invoice_id'][0];
+            }
+        }
+        $invoiceIdsToFetch = array_values(array_unique($invoiceIdsToFetch));
+
+        $invoiceLineData = [];
+        if (!empty($invoiceIdsToFetch)) {
+            $invoiceLineData = $this->execute('account.move.line', 'search_read', [
+                [['move_id', 'in', $invoiceIdsToFetch], ['display_type', '=', 'product']],
+                ['move_id', 'product_id', 'duration_price']
+            ]);
+        }
+        
+        $invoiceDurationPriceMap = [];
+        foreach ($invoiceLineData as $line) {
+            $moveId = $line['move_id'][0] ?? null;
+            $productName = $line['product_id'][1] ?? null;
+            if ($moveId && $productName) {
+                if (!isset($invoiceDurationPriceMap[$moveId])) {
+                    $invoiceDurationPriceMap[$moveId] = [];
+                }
+                $invoiceDurationPriceMap[$moveId][$productName] = $line['duration_price'] ?? 0;
             }
         }
 
@@ -1780,7 +1812,10 @@ class OdooService
                 'start' => !empty($so['actual_start_rental']) ? \Carbon\Carbon::parse($so['actual_start_rental'], 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : '',
                 'end' => !empty($so['actual_end_rental']) ? \Carbon\Carbon::parse($so['actual_end_rental'], 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : '',
                 'tanggal_periode_belum_cetak' => $period['invoice_date'] ?? '',
-                'price_di_so' => $durationPriceMap[$soId][$period['product_id'][0] ?? null] ?? $period['price_unit'] ?? 0,
+                'start_rental_period' => !empty($period['start_rental_period_date']) ? \Carbon\Carbon::parse($period['start_rental_period_date'], 'UTC')->format('Y-m-d') : '',
+                'end_rental_period' => !empty($period['end_rental_period_date']) ? \Carbon\Carbon::parse($period['end_rental_period_date'], 'UTC')->format('Y-m-d') : '',
+                'price_di_so' => $period['price_unit'] ?? 0,
+                'duration_price' => $invoiceDurationPriceMap[$period['invoice_id'][0] ?? null][$period['product_id'][1] ?? null] ?? 0,
                 'invoice_period' => $so['sale_invoice_period_id'][1] ?? '',
                 'payment_terms' => $so['payment_term_id'][1] ?? '',
                 'rental_method' => ucwords(str_replace('_', ' ', $so['rental_method'] ?? '')),

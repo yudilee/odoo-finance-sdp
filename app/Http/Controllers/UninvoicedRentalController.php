@@ -168,8 +168,8 @@ class UninvoicedRentalController extends Controller
 
         $columns = [
             'Kode Cust', 'Nomor SO', 'Nomor PO', 'Nomor Kontrak', 'Kontrak Ref', 'Nama user', 'Nopol',
-            'Model', 'Tahun Mobil', 'Start', 'End', 'Tanggal periode belum cetak',
-            'Price di SO', 'Invoice Period', 'Payment Terms', 'Area pemakaian uunit',
+            'Model', 'Tahun Mobil', 'Actual Start Rent', 'Actual End Rental', 'Tanggal periode belum cetak',
+            'Start Rental Period', 'End Rental Period', 'Price di SO', 'Duration Price', 'Invoice Period', 'Payment Terms', 'Area pemakaian uunit',
             'Chassis', 'Invoice PIC', 'First Invoice date', 'Rental Method',
             'Recipient Bank', 'Tax ID', 'ID TKU', 'Kode Transaksi', 'Address', 'Tax Address',
         ];
@@ -197,7 +197,10 @@ class UninvoicedRentalController extends Controller
                 $html .= '<td>' . htmlspecialchars((string)$rental->start) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->end) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->tanggal_periode_belum_cetak) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string)($rental->start_rental_period ? date('d/m/Y', strtotime($rental->start_rental_period)) : '')) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string)($rental->end_rental_period ? date('d/m/Y', strtotime($rental->end_rental_period)) : '')) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->price_di_so) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string)$rental->duration_price) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->invoice_period) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->payment_terms) . '</td>';
                 $html .= '<td>' . htmlspecialchars((string)$rental->area_pemakaian_unit) . '</td>';
@@ -252,7 +255,10 @@ class UninvoicedRentalController extends Controller
                     $rental->start,
                     $rental->end,
                     $rental->tanggal_periode_belum_cetak,
+                    $rental->start_rental_period ? date('d/m/Y', strtotime($rental->start_rental_period)) : '',
+                    $rental->end_rental_period ? date('d/m/Y', strtotime($rental->end_rental_period)) : '',
                     $rental->price_di_so,
+                    $rental->duration_price,
                     $rental->invoice_period,
                     $rental->payment_terms,
                     $rental->area_pemakaian_unit,

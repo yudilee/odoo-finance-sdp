@@ -51,8 +51,8 @@
                 <input type="hidden" name="invoice_period" value="{{ request('invoice_period') }}">
                 <div class="relative flex items-center bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors border-r border-slate-700/50">
                     <select name="format" class="appearance-none bg-transparent text-white text-sm font-medium pl-4 pr-8 py-2 outline-none cursor-pointer">
+                        <option value="xls" class="text-slate-900" selected>Excel (XLS)</option>
                         <option value="csv" class="text-slate-900">CSV</option>
-                        <option value="xls" class="text-slate-900">Excel (XLS)</option>
                     </select>
                     <div class="pointer-events-none absolute right-0 flex items-center px-2 text-white">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -115,10 +115,13 @@
                         <th class="px-4 py-3 font-medium">Chassis</th>
                         <th class="px-4 py-3 font-medium">Model</th>
                         <th class="px-4 py-3 font-medium">Tahun Mobil</th>
-                        <th class="px-4 py-3 font-medium">Start</th>
-                        <th class="px-4 py-3 font-medium">End</th>
+                        <th class="px-4 py-3 font-medium">Actual Start Rent</th>
+                        <th class="px-4 py-3 font-medium">Actual End Rental</th>
                         <th class="px-4 py-3 font-medium">Tanggal periode belum cetak</th>
+                        <th class="px-4 py-3 font-medium">Start Rental Period</th>
+                        <th class="px-4 py-3 font-medium">End Rental Period</th>
                         <th class="px-4 py-3 font-medium">Price di SO</th>
+                        <th class="px-4 py-3 font-medium">Duration Price</th>
                         <th class="px-4 py-3 font-medium">Invoice Period</th>
                         <th class="px-4 py-3 font-medium">Invoice PIC</th>
                         <th class="px-4 py-3 font-medium">First Invoice date</th>
@@ -146,10 +149,13 @@
                         <td class="px-4 py-3">{{ $rental->chassis }}</td>
                         <td class="px-4 py-3">{{ $rental->model }}</td>
                         <td class="px-4 py-3">{{ $rental->tahun_mobil }}</td>
-                        <td class="px-4 py-3">{{ $rental->start }}</td>
-                        <td class="px-4 py-3">{{ $rental->end }}</td>
-                        <td class="px-4 py-3">{{ $rental->tanggal_periode_belum_cetak }}</td>
-                        <td class="px-4 py-3">Rp {{ number_format($rental->price_di_so, 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">{{ $rental->start }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">{{ $rental->end }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">{{ $rental->tanggal_periode_belum_cetak }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">{{ $rental->start_rental_period ? date('d/m/Y', strtotime($rental->start_rental_period)) : '' }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">{{ $rental->end_rental_period ? date('d/m/Y', strtotime($rental->end_rental_period)) : '' }}</td>
+                        <td class="px-4 py-3 text-nowrap whitespace-nowrap">Rp {{ number_format($rental->price_di_so, 0, ',', '.') }}</td>
+                        <td class="px-4 py-3">Rp {{ number_format($rental->duration_price, 0, ',', '.') }}</td>
                         <td class="px-4 py-3">{{ $rental->invoice_period }}</td>
                         <td class="px-4 py-3">{{ $rental->invoice_pic }}</td>
                         <td class="px-4 py-3">{{ $rental->first_invoice_date }}</td>
