@@ -502,7 +502,7 @@
                     @if($showUnitColumn)
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            @if($line->quantity > 0)
+                            @if($line->quantity > 0 && !request('without_satuan'))
                                 {{ number_format($line->quantity, 0) }}
                             @endif
                         @endif

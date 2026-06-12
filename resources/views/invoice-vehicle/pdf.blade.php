@@ -435,7 +435,9 @@
                     @if($showUnitColumn)
                     <td class="text-center">
                         @if(!isset($printMode) || $printMode !== 'summary')
-                            {{ $line->license_plate ?? '' }}
+                            @if(!request('without_satuan'))
+                                {{ $line->license_plate ?? '' }}
+                            @endif
                         @endif
                     </td>
                     @endif

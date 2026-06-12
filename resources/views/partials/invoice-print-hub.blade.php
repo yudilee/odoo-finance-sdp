@@ -225,21 +225,48 @@
         });
     }
 
+    window.toggleSatuan = function(isChecked) {
+        const iframe = document.getElementById('invoicePreviewIframe');
+        const dlBtn = document.getElementById('downloadPdfBtn');
+        const refreshBtn = document.getElementById('refreshOdooBtn');
+        
+        const updateUrl = (urlStr) => {
+            if (!urlStr) return urlStr;
+            let url = new URL(urlStr, urlStr.startsWith('http') ? undefined : window.location.origin);
+            if (isChecked) {
+                url.searchParams.set('without_satuan', '1');
+            } else {
+                url.searchParams.delete('without_satuan');
+            }
+            return url.pathname + url.search;
+        };
+
+        if (iframe) iframe.src = updateUrl(iframe.src);
+        if (dlBtn) dlBtn.href = updateUrl(dlBtn.href);
+        if (refreshBtn) refreshBtn.dataset.htmlUrl = updateUrl(refreshBtn.dataset.htmlUrl);
+    };
+
     /* ---------- preview modal (iframe) ---------- */
     window.showInvoicePreviewModal = function(htmlUrl, pdfUrl, refreshUrl) {
+        const isTargetInvoice = /invoice-(driver|other|vehicle|proforma)/.test(htmlUrl);
         Swal.fire({
             html: `
                 <div style="margin:0 -20px 0 -20px;">
                     <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
                         <span style="color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;">
                             <span style="background-color:#fef08a;width:12px;height:12px;border-radius:3px;display:inline-block;"></span> = Rate anomaly (internal only, hidden in PDF)
+                            ${isTargetInvoice ? `
+                            <label style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;display:flex;align-items:center;gap:6px;cursor:pointer;color:#e2e8f0;font-weight:600;">
+                                <input type="checkbox" id="withoutSatuanCheckbox" onchange="window.toggleSatuan(this.checked)" style="cursor:pointer;" ${htmlUrl.includes('without_satuan=1') ? 'checked' : ''} /> Without SATUAN
+                            </label>
+                            ` : ''}
                         </span>
                         <div style="display:flex;align-items:center;gap:12px;">
                             ${refreshUrl ? `<button id="refreshOdooBtn" onclick="window._refreshFromOdoo(this)" data-url="${refreshUrl}" data-html-url="${htmlUrl}" style="background:#f59e0b;color:white;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Refresh from Odoo
                             </button>` : ''}
-                            <a href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                            <a id="downloadPdfBtn" href="${pdfUrl}" target="_blank" style="background:#10b981;color:white;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 Download PDF (Clean)
                             </a>
