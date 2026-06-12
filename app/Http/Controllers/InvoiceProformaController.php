@@ -100,7 +100,14 @@ class InvoiceProformaController extends Controller
         $sort = $request->input('sort', 'invoice_date');
         $dir = $request->input('dir', 'desc');
 
-        $query = InvoiceProforma::with('lines')->whereNotNull('proforma_number');
+        $query = InvoiceProforma::select('invoice_proformas.*')
+            ->with('lines')
+            ->whereNotNull('proforma_number')
+            ->addSelect(['last_print_mode' => \App\Models\PrintLog::select('print_mode')
+                ->whereRaw("invoice_name = 'PROFORMA_' || invoice_proformas.odoo_id")
+                ->orderBy('updated_at', 'desc')
+                ->limit(1)
+            ]);
 
         // Search
         if ($request->filled('search')) {
@@ -360,8 +367,9 @@ class InvoiceProformaController extends Controller
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
                 $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
-                $inv->print_count = $log->print_count;
                 $log->increment('print_count');
+                $inv->print_count = $log->print_count;
+                $inv->save();
             }
         } catch (\Exception $e) {
             foreach ($invoices as $inv) {
@@ -418,8 +426,9 @@ class InvoiceProformaController extends Controller
             foreach ($invoices as $inv) {
                 $this->ensureProformaNumber($inv);
                 $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
-                $inv->print_count = $log->print_count;
                 $log->increment('print_count');
+                $inv->print_count = $log->print_count;
+                $inv->save();
             }
         } catch (\Exception $e) {}
 
