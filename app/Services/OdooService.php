@@ -742,12 +742,21 @@ class OdooService
             // Search IDs on the period model directly (most efficient)
             $allIds = $this->execute('rental.period.invoice', 'search', [$domain], ['order' => 'invoice_date asc']);
 
+            return $this->fetchSubscriptionInvoicePeriodsByIds($allIds);
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
+        }
+    }
+
+    public function fetchSubscriptionInvoicePeriodsByIds(array $allIds): array
+    {
+        try {
             if (empty($allIds)) {
                 return [
                     'success' => true,
                     'data' => [],
                     'count' => 0,
-                    'message' => 'No subscription invoice periods found for the given date range.',
+                    'message' => 'No subscription invoice periods found.',
                 ];
             }
 
@@ -1839,5 +1848,48 @@ class OdooService
         }
 
         return $results;
+    }
+
+    /**
+     * Get recent invoice IDs for quick sync (fetches the newest created in Odoo)
+     */
+    public function getRecentInvoiceIds(string $type, int $limit = 20): array
+    {
+        try {
+            $domain = [['state', '=', 'posted']];
+            $model = 'account.move';
+
+            switch ($type) {
+                case 'rental':
+                    $domain[] = ['journal_id.name', 'in', ['Invoice Sewa Retail', 'Invoice Sewa Subscription']];
+                    break;
+                case 'driver':
+                    $domain[] = ['journal_id.name', '=', 'Invoice Driver'];
+                    break;
+                case 'other':
+                    $domain[] = ['journal_id.name', 'in', ['Invoice Other with Tax', 'Invoice Other wo Tax']];
+                    break;
+                case 'vehicle':
+                    $domain[] = ['journal_id.name', '=', 'Invoice Used Car'];
+                    break;
+                case 'proforma':
+                    $domain = [
+                        ['state', '=', 'draft'],
+                        ['move_type', '=', 'out_invoice']
+                    ];
+                    break;
+                case 'subscription':
+                    $domain = [['rental_order_id.rental_type', '=', 'subscription']];
+                    $model = 'rental.period.invoice';
+                    break;
+                default:
+                    throw new \Exception('Invalid invoice type');
+            }
+
+            $ids = $this->execute($model, 'search', [$domain], ['limit' => $limit, 'order' => 'create_date desc']);
+            return ['success' => true, 'ids' => $ids, 'count' => count($ids)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
+        }
     }
 }

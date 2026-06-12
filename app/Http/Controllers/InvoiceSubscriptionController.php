@@ -237,6 +237,46 @@ class InvoiceSubscriptionController extends Controller
     }
 
     /**
+     * Quick sync recent invoices
+     */
+    public function syncRecent(Request $request, SyncService $sync)
+    {
+        try {
+            $odoo = new OdooService();
+            $idResult = $odoo->getRecentInvoiceIds('subscription', 50);
+
+            if (!$idResult['success'] || empty($idResult['ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No recent invoices found or fetch failed: ' . ($idResult['message'] ?? '')
+                ]);
+            }
+
+            $result = $odoo->fetchSubscriptionInvoicePeriodsByIds($idResult['ids']);
+
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Odoo fetch failed: ' . ($result['message'] ?? 'Unknown error')
+                ]);
+            }
+
+            $savedCount = $sync->saveInvoiceSubscriptions($result['data'], false);
+
+            return response()->json([
+                'success' => true,
+                'count' => $savedCount,
+                'message' => "Successfully quick synced {$savedCount} recent invoices."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quick sync failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Sync subscription invoice periods from Odoo.
      * Uses a fixed date window: 2025-04-01 → today + 15 days.
      */

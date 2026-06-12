@@ -188,10 +188,52 @@ class InvoiceOtherController extends Controller
     }
 
     /**
+     * Quick sync recent invoices
+     */
+    public function syncRecent(Request $request)
+    {
+        try {
+            $odoo = new OdooService();
+            $idResult = $odoo->getRecentInvoiceIds('other', 50);
+
+            if (!$idResult['success'] || empty($idResult['ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No recent invoices found or fetch failed: ' . ($idResult['message'] ?? '')
+                ]);
+            }
+
+            $result = $odoo->fetchInvoiceOthersByIds($idResult['ids']);
+
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Odoo fetch failed: ' . ($result['message'] ?? 'Unknown error')
+                ]);
+            }
+
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceOthers($result['data']);
+
+            return response()->json([
+                'success' => true,
+                'count' => $savedCount,
+                'message' => "Successfully quick synced {$savedCount} recent invoices."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quick sync failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Sync invoice other entries from Odoo (Legacy/Single-shot)
      */
     public function sync(Request $request)
     {
+        // For backward compatibility or small ranges
         return $this->getSyncIds($request);
     }
 

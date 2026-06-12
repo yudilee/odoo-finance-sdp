@@ -172,6 +172,47 @@ class InvoiceRentalController extends Controller
     }
 
     /**
+     * Quick sync recent invoices
+     */
+    public function syncRecent(Request $request)
+    {
+        try {
+            $odoo = new OdooService();
+            $idResult = $odoo->getRecentInvoiceIds('rental', 50);
+
+            if (!$idResult['success'] || empty($idResult['ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No recent invoices found or fetch failed: ' . ($idResult['message'] ?? '')
+                ]);
+            }
+
+            $result = $odoo->fetchInvoiceRentalsByIds($idResult['ids']);
+
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Odoo fetch failed: ' . ($result['message'] ?? 'Unknown error')
+                ]);
+            }
+
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceRentals($result['data']);
+
+            return response()->json([
+                'success' => true,
+                'count' => $savedCount,
+                'message' => "Successfully quick synced {$savedCount} recent invoices."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quick sync failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Sync invoice rental entries from Odoo (Legacy/Single-shot)
      */
     public function sync(Request $request)

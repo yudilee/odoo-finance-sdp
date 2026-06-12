@@ -131,6 +131,42 @@
         this.syncCurrentStep = 'Sync Finished!';
         setTimeout(() => window.location.reload(), 2000);
     },
+    async doQuickSync() {
+        this.syncing = true;
+        this.syncProgress = 0;
+        this.syncResults = [];
+        this.syncCurrentStep = 'Quick Syncing latest invoices...';
+        this.openSyncModal = true;
+        
+        try {
+            const res = await fetch('{{ route('invoice-subscription.sync-recent', [], false) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json',
+                }
+            });
+            const data = await res.json();
+            
+            this.syncResults.push({
+                label: 'Quick Sync',
+                success: data.success,
+                count: data.count || 0,
+                message: data.message
+            });
+            this.syncProgress = 100;
+        } catch (e) {
+            this.syncResults.push({
+                label: 'Quick Sync',
+                success: false,
+                error: e.message
+            });
+        }
+        
+        this.syncCurrentStep = 'Quick Sync Finished!';
+        setTimeout(() => window.location.reload(), 2000);
+    },
     toggleAll(checked) {
         if (checked) {
             const pageIds = [{{ implode(',', $records->pluck('id')->toArray()) }}];
@@ -383,11 +419,14 @@
                         class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
                 </div>
                 <div class="flex gap-2 items-end pb-[2px]">
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">Filter</button>
-                    <a href="{{ route('invoice-subscription.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
-                    <button type="button" @click="syncOpen = !syncOpen" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
+                    <button type="submit" class="px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">Filter</button>
+                    <a href="{{ route('invoice-subscription.index') }}" class="px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Clear</a>
+                    <button type="button" @click="doQuickSync()" class="px-3 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-1" title="Quick Sync Latest 50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </button>
+                    <button type="button" @click="syncOpen = !syncOpen" class="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Sync Odoo
+                        Sync
                     </button>
                     
                     {{-- Export Data Menu --}}
