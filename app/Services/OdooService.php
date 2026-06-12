@@ -352,6 +352,7 @@ class OdooService
                 'contract_ref',
                 'invoice_line_ids/sale_order_id/rental_contract_id/name',
                 'rental_period_id/rental_order_id/rental_contract_id/name',
+                'invoice_date_due',
                 'invoice_line_ids/duration_price',
                 'partner_id/.id',
                 'invoice_line_ids/rental_qty',
