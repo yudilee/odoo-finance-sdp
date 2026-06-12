@@ -492,4 +492,31 @@ class InvoiceOtherController extends Controller
         ]);
     }
 
+    /**
+     * Refresh a single invoice from Odoo (quick re-sync)
+     */
+    public function refreshFromOdoo(InvoiceOther $invoice)
+    {
+        try {
+            $odoo = new OdooService();
+            $domain = [['state', '=', 'posted'], ['name', '=', $invoice->name]];
+            $ids = $odoo->execute('account.move', 'search', [$domain]);
+
+            if (empty($ids)) {
+                return response()->json(['success' => false, 'message' => 'Invoice not found in Odoo: ' . $invoice->name]);
+            }
+
+            $result = $odoo->fetchInvoiceOthersByIds($ids);
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json(['success' => false, 'message' => 'Failed to fetch invoice data from Odoo.']);
+            }
+
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceOthers($result['data']);
+
+            return response()->json(['success' => true, 'message' => "Refreshed {$invoice->name} successfully.", 'count' => $savedCount]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Refresh failed: ' . $e->getMessage()]);
+        }
+    }
 }

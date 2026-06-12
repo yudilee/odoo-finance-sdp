@@ -535,4 +535,33 @@ class InvoiceProformaController extends Controller
             'isHtml' => true,
         ]);
     }
+
+    /**
+     * Refresh a single invoice from Odoo (quick re-sync)
+     */
+    public function refreshFromOdoo(InvoiceProforma $invoice)
+    {
+        try {
+            $odoo = new OdooService();
+            // Proformas are draft invoices
+            $domain = [['state', '=', 'draft'], ['move_type', '=', 'out_invoice'], ['name', '=', $invoice->name]];
+            $ids = $odoo->execute('account.move', 'search', [$domain]);
+
+            if (empty($ids)) {
+                return response()->json(['success' => false, 'message' => 'Invoice not found in Odoo: ' . $invoice->name]);
+            }
+
+            $result = $odoo->fetchInvoiceProformasByIds($ids);
+            if (!$result['success'] || empty($result['data'])) {
+                return response()->json(['success' => false, 'message' => 'Failed to fetch invoice data from Odoo.']);
+            }
+
+            $syncService = new \App\Services\SyncService();
+            $savedCount = $syncService->saveInvoiceProformas($result['data']);
+
+            return response()->json(['success' => true, 'message' => "Refreshed {$invoice->name} successfully.", 'count' => $savedCount]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Refresh failed: ' . $e->getMessage()]);
+        }
+    }
 }

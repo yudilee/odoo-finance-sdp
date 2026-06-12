@@ -484,7 +484,7 @@
             if (result.isConfirmed) {
                 let htmlUrl = url.replace('/pdf', '/html') + '?print_mode=' + result.value + '&show_username=0';
                 let pdfUrl = url + '?print_mode=' + result.value + '&show_username=0';
-                window.showInvoicePreviewModal(htmlUrl, pdfUrl);
+                window.showInvoicePreviewModal(htmlUrl, pdfUrl, url.replace('/pdf', '/refresh'));
             }
         });
     }
