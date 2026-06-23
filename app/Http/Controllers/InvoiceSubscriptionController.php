@@ -125,9 +125,9 @@ class InvoiceSubscriptionController extends Controller
                           })->where('invoice_date', '>=', $today);
                       });
                 }),
-                'paid'    => $query->whereRaw("LOWER(payment_state) = 'paid'"),
+                'paid'    => $query->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_state)'), ['paid', 'in_payment', 'partial', 'reversed']),
                 'unpaid'  => $query->whereRaw("LOWER(invoice_state) = 'posted'")
-                                   ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'"),
+                                   ->whereNotIn(\Illuminate\Support\Facades\DB::raw("LOWER(COALESCE(payment_state,''))"), ['paid', 'in_payment', 'partial', 'reversed']),
                 default   => null,
             };
         }
@@ -183,8 +183,8 @@ class InvoiceSubscriptionController extends Controller
                 count(CASE WHEN (invoice_name IS NULL OR invoice_name = '') AND invoice_date < ? THEN 1 END) as not_invoiced_overdue,
                 count(CASE WHEN (invoice_name IS NULL OR invoice_name = '') AND invoice_date >= ? THEN 1 END) as not_invoiced_upcoming,
                 count(CASE WHEN LOWER(invoice_state) = 'draft' THEN 1 END) as draft,
-                count(CASE WHEN LOWER(payment_state) = 'paid' THEN 1 END) as paid,
-                count(CASE WHEN LOWER(invoice_state) = 'posted' AND LOWER(COALESCE(payment_state,'')) != 'paid' THEN 1 END) as unpaid
+                count(CASE WHEN LOWER(payment_state) IN ('paid', 'in_payment', 'partial', 'reversed') THEN 1 END) as paid,
+                count(CASE WHEN LOWER(invoice_state) = 'posted' AND LOWER(COALESCE(payment_state,'')) NOT IN ('paid', 'in_payment', 'partial', 'reversed') THEN 1 END) as unpaid
             ", [now()->toDateString(), now()->toDateString()])
             ->first()
             ->toArray();
@@ -413,9 +413,9 @@ class InvoiceSubscriptionController extends Controller
                                                   })->where('invoice_date', '>=', $today);
                                               });
                                         }),
-                    'paid'         => $query->whereRaw("LOWER(payment_state) = 'paid'"),
+                    'paid'         => $query->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_state)'), ['paid', 'in_payment', 'partial', 'reversed']),
                     'unpaid'       => $query->whereRaw("LOWER(invoice_state) = 'posted'")
-                                           ->whereRaw("LOWER(COALESCE(payment_state,'')) != 'paid'"),
+                                           ->whereNotIn(\Illuminate\Support\Facades\DB::raw("LOWER(COALESCE(payment_state,''))"), ['paid', 'in_payment', 'partial', 'reversed']),
                     default        => null,
                 };
             }
@@ -560,6 +560,9 @@ class InvoiceSubscriptionController extends Controller
 
         if ($state === 'draft') return 'Draft';
         if ($pay === 'paid')    return 'Paid';
+        if ($pay === 'in_payment') return 'In Payment';
+        if ($pay === 'partial') return 'Partial Paid';
+        if ($pay === 'reversed') return 'Reversed';
         if ($state === 'posted') return 'Posted/Unpaid';
         
         return $row->invoice_state ?? 'Unknown';

@@ -385,6 +385,40 @@ class InvoiceProformaController extends Controller
     }
 
     /**
+     * Simulate Proforma number generation for HTML preview (doesn't save)
+     */
+    private function simulateProformaNumber(InvoiceProforma $invoice, &$simulatedCounter = null)
+    {
+        if (!empty($invoice->proforma_number)) {
+            return $invoice->proforma_number;
+        }
+
+        $date = $invoice->invoice_date ?: now();
+        $year = $date->format('y');
+
+        $prefix = "PRO/{$year}/PRO/";
+
+        if ($simulatedCounter === null) {
+            $lastInvoice = InvoiceProforma::where('proforma_number', 'like', "{$prefix}%")
+                ->orderBy('proforma_number', 'desc')
+                ->first();
+
+            $nextSequence = 1;
+            if ($lastInvoice && !empty($lastInvoice->proforma_number)) {
+                $parts = explode('/', $lastInvoice->proforma_number);
+                $lastSequence = (int) end($parts);
+                $nextSequence = $lastSequence + 1;
+            }
+            $simulatedCounter = $nextSequence;
+        }
+
+        $newNumber = $prefix . str_pad($simulatedCounter, 4, '0', STR_PAD_LEFT);
+        $simulatedCounter++;
+
+        return $newNumber;
+    }
+
+    /**
      * Print a single invoice proforma entry to PDF
      */
     public function printPdf(Request $request, InvoiceProforma $invoice)
@@ -514,8 +548,11 @@ class InvoiceProformaController extends Controller
 
         // Track print count
         try {
+            $simulatedCounter = null;
             foreach ($invoices as $inv) {
-                $this->ensureProformaNumber($inv);
+                if (empty($inv->proforma_number)) {
+                    $inv->proforma_number = $this->simulateProformaNumber($inv, $simulatedCounter);
+                }
                 $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 // HTML preview does not increment the print count
@@ -562,8 +599,11 @@ class InvoiceProformaController extends Controller
         }
 
         try {
+            $simulatedCounter = null;
             foreach ($invoices as $inv) {
-                $this->ensureProformaNumber($inv);
+                if (empty($inv->proforma_number)) {
+                    $inv->proforma_number = $this->simulateProformaNumber($inv, $simulatedCounter);
+                }
                 $log = PrintLog::firstOrCreate(['invoice_name' => 'PROFORMA_' . $inv->odoo_id, 'print_mode' => $cetakan]);
                 $inv->print_count = $log->print_count;
                 // HTML preview does not increment the print count
