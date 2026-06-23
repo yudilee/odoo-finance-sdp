@@ -54,21 +54,36 @@
     syncResults: [],
     selectedIds: [],
     exportOpen: false,
+    customSyncStart: '',
+    customSyncEnd: '',
     columns: {{ json_encode($tablePrefs['columns']) }},
-    generateChunks(isFull = false) {
-        // Start from 2025-04-01 if full, otherwise start from previous month
-        const start = isFull 
-            ? new Date(2025, 3, 1) 
-            : new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
-        const end = new Date();
-        end.setDate(end.getDate() + 15);
+    generateChunks(mode = 'fast', startStr = null, endStr = null) {
+        let start, end;
+        if (mode === 'custom' && startStr && endStr) {
+            start = new Date(startStr);
+            end = new Date(endStr);
+            if (start > end) {
+                const temp = start;
+                start = end;
+                end = temp;
+            }
+        } else if (mode === 'deep') {
+            start = new Date(2025, 3, 1);
+            end = new Date();
+            end.setDate(end.getDate() + 15);
+        } else {
+            // fast
+            start = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+            end = new Date();
+            end.setDate(end.getDate() + 15);
+        }
         
         const chunks = [];
         let current = new Date(start.getFullYear(), start.getMonth(), 1);
         
         while (current <= end) {
-            const chunkStart = new Date(current);
-            const chunkEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+            const chunkStart = new Date(Math.max(current, start));
+            const chunkEnd = new Date(Math.min(new Date(current.getFullYear(), current.getMonth() + 1, 0), end));
             
             const formatDate = (d) => {
                 const year = d.getFullYear();
@@ -80,15 +95,19 @@
             chunks.push({
                 from: formatDate(chunkStart),
                 to: formatDate(chunkEnd),
-                label: chunkStart.toLocaleString('default', { month: 'long', year: 'numeric' })
+                label: chunkStart.toLocaleString('default', { month: 'long', year: 'numeric' }) + (mode === 'custom' ? ` (${formatDate(chunkStart)} ~ ${formatDate(chunkEnd)})` : '')
             });
             
-            current.setMonth(current.getMonth() + 1);
+            current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
         }
         return chunks;
     },
-    async doSync(isFull = false) {
-        const chunks = this.generateChunks(isFull);
+    async doSync(mode = 'fast') {
+        const chunks = this.generateChunks(mode, this.customSyncStart, this.customSyncEnd);
+        if(chunks.length === 0) {
+            alert('Invalid date range');
+            return;
+        }
         this.syncing = true;
         this.syncProgress = 0;
         this.syncResults = [];
@@ -98,7 +117,7 @@
             this.syncCurrentStep = `Processing ${chunk.label}...`;
             
             // Only truncate the table on the very first chunk of a Deep Re-Sync
-            const isTruncate = (isFull && i === 0) ? '1' : '0';
+            const isTruncate = (mode === 'deep' && i === 0) ? '1' : '0';
 
             try {
                 const url = `{{ route('invoice-subscription.sync', [], false) }}?from=${chunk.from}&to=${chunk.to}&truncate=${isTruncate}`;
@@ -532,7 +551,7 @@
                     </div>
 
                     <div x-show="!syncing" class="space-y-4">
-                        <button @click="doSync(false)" class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 hover:border-emerald-500 transition-all text-left">
+                        <button @click="doSync('fast')" class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 hover:border-emerald-500 transition-all text-left">
                             <div class="p-3 bg-emerald-500 rounded-lg text-white">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             </div>
@@ -542,7 +561,7 @@
                             </div>
                         </button>
 
-                        <button @click="doSync(true)" class="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-violet-500 transition-all text-left group">
+                        <button @click="doSync('deep')" class="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-violet-500 transition-all text-left group">
                             <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500 group-hover:bg-violet-500 group-hover:text-white transition-all">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             </div>
@@ -551,6 +570,31 @@
                                 <div class="text-xs text-slate-500 leading-tight">Fetch everything from April 2025. Use this if historical data changed.</div>
                             </div>
                         </button>
+
+                        <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                            <div class="flex items-center gap-4 text-left group mb-2">
+                                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tighter text-sm">Custom Sync</div>
+                                    <div class="text-xs text-slate-500 leading-tight">Select specific date range to sync.</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-end">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-medium text-slate-500 mb-1">From Date</label>
+                                    <input type="date" x-model="customSyncStart" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-medium text-slate-500 mb-1">To Date</label>
+                                    <input type="date" x-model="customSyncEnd" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                </div>
+                                <button @click="doSync('custom')" :disabled="!customSyncStart || !customSyncEnd" class="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50 h-[34px]">
+                                    Sync
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div x-show="syncing" class="space-y-6">
