@@ -68,8 +68,9 @@ class InvoiceSubscription extends Model
         if (strtolower($this->invoice_state ?? '') === 'draft') {
             return 'draft';
         }
-        if (strtolower($this->payment_state ?? '') === 'paid') {
-            return 'paid';
+        $pay = strtolower($this->payment_state ?? '');
+        if (in_array($pay, ['paid', 'in_payment', 'partial', 'reversed'])) {
+            return $pay;
         }
         if (strtolower($this->invoice_state ?? '') === 'posted') {
             return 'unpaid';
@@ -96,8 +97,8 @@ class InvoiceSubscription extends Model
         return match($status) {
             'not_invoiced' => $q->whereNull('invoice_name')->orWhere('invoice_name', ''),
             'draft'        => $q->whereRaw("LOWER(invoice_state) = 'draft'"),
-            'paid'         => $q->whereRaw("LOWER(payment_state) = 'paid'"),
-            'unpaid'       => $q->whereRaw("LOWER(invoice_state) = 'posted'")->whereRaw("LOWER(payment_state) != 'paid'"),
+            'paid'         => $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_state)'), ['paid', 'in_payment', 'partial', 'reversed']),
+            'unpaid'       => $q->whereRaw("LOWER(invoice_state) = 'posted'")->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_state)'), ['paid', 'in_payment', 'partial', 'reversed']),
             default        => $q,
         };
     }
