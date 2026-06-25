@@ -354,7 +354,7 @@
                     $displayLines->push((object)[
                         'description' => $summaryDesc,
                         'quantity' => $totalQty,
-                        'uom' => $rentalLines->first()->uom ?? 'Unit',
+                        'uom' => !empty($rentalLines->first()->uom) ? $rentalLines->first()->uom : (!empty($rentalLines->first()->rental_qty) ? 'month' : 'Unit'),
                         'price_unit' => null, 
                         'amount' => $summaryAmount,
                         'is_summary' => true
@@ -637,7 +637,7 @@
                                         'unit' => 'Unit',
                                         'units' => 'Unit'
                                     ];
-                                    $uomStr = $line->uom ?? 'Unit';
+                                    $uomStr = !empty($line->uom) ? $line->uom : (!empty($line->rental_qty) || !empty($line->actual_start) || !empty($line->actual_end) ? 'month' : 'Unit');
                                     $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
                                 @endphp
                                 @if($displayQty != 0 && !request('without_satuan'))

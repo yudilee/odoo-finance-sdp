@@ -1109,6 +1109,8 @@ class OdooService
                 'invoice_line_ids/product_id/name', // 27
                 'invoice_line_ids/start_rental_period', // 28
                 'invoice_line_ids/end_rental_period', // 29
+                'invoice_line_ids/rental_uom', // 30
+                'invoice_line_ids/sale_order_id/rental_uom', // 31
             ];
 
             $entries = [];
@@ -1157,6 +1159,7 @@ class OdooService
                         $linePrice = (float) ($row[12] ?? 0);
 
                         if (!empty($lineDesc) || $lineQty > 0 || $linePrice > 0) {
+                            $uom = !empty($row[30]) ? $row[30] : ($row[31] ?? '');
                             $currentEntry['lines'][] = [
                                 'description' => $lineDesc,
                                 'quantity' => $lineQty,
@@ -1168,6 +1171,7 @@ class OdooService
                                 'product_name' => $row[27] ?? '',
                                 'actual_start' => $row[28] ?? '',
                                 'actual_end' => $row[29] ?? '',
+                                'uom' => $uom,
                             ];
                         }
                     }

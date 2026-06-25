@@ -161,7 +161,8 @@
                                         'unit' => 'Unit',
                                         'units' => 'Unit'
                                     ];
-                                    $uomIndo = $uomMap[strtolower(trim($line->uom))] ?? $line->uom;
+                                    $uomStr = !empty($line->uom) ? $line->uom : (!empty($line->rental_qty) || !empty($line->actual_start) || !empty($line->actual_end) ? 'month' : 'Unit');
+                                    $uomIndo = $uomMap[strtolower(trim($uomStr))] ?? $uomStr;
                                 @endphp
                                 {{ $displayQty > 0 ? (($displayQty == (int)$displayQty) ? number_format($displayQty, 0, '.', ',') : rtrim(rtrim(number_format($displayQty, 4, '.', ','), '0'), '.')) : '-' }} {{ $uomIndo }}
                             @else
