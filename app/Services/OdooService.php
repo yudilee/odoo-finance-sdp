@@ -1000,11 +1000,10 @@ class OdooService
                         $rentalQty = (float) ($row[28] ?? 0);
                         $productName = $row[31] ?? '';
 
-                        // Pull exact time from Rental Order only for INVRT (Retail). 
-                        // For INVRS (Subscription), use the billing period ($row[12]/[13]).
+                        // Strictly use Start Rental Period ($row[12]) and End Rental Period ($row[13]) for INVRT.
                         if (str_starts_with($invoiceName, 'INVRT')) {
-                            $actualStart = !empty($row[32]) ? $row[32] : ($row[12] ?? '');
-                            $actualEnd = !empty($row[33]) ? $row[33] : ($row[13] ?? '');
+                            $actualStart = !empty($row[12]) ? $row[12] : (!empty($row[32]) ? $row[32] : '');
+                            $actualEnd = !empty($row[13]) ? $row[13] : (!empty($row[33]) ? $row[33] : '');
                         }
 
                         // Prepend product name to description if it's not already there, so we can filter by it
