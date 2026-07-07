@@ -1817,18 +1817,18 @@ class OdooService
             $statusDisplay = '';
             if ($rawState === 'cancel' || $rawStatus === 'cancel' || $rawStatus === 'cancelled') {
                 $statusDisplay = 'Cancelled';
-            } elseif ($rawStatus === 'pickup' || $rawStatus === 'pickedup' || $rawStatus === 'picked_up') {
-                $statusDisplay = 'Pickedup';
-            } elseif ($rawStatus === 'return' || $rawStatus === 'returned') {
-                $statusDisplay = 'Returned';
-            } elseif ($rawStatus === 'reserved') {
+            } elseif ($rawStatus === 'pickup' || $rawStatus === 'reserved') {
                 $statusDisplay = 'Reserved';
+            } elseif ($rawStatus === 'return' || $rawStatus === 'pickedup' || $rawStatus === 'picked_up') {
+                $statusDisplay = 'Pickedup';
+            } elseif ($rawStatus === 'returned') {
+                $statusDisplay = 'Returned';
             } elseif ($rawStatus === 'draft' || $rawStatus === 'sent' || $rawState === 'draft' || $rawState === 'sent') {
                 $statusDisplay = 'Quotation';
             } else {
                 $statusDisplay = !empty($rawStatus) ? ucwords(str_replace(['_', '-'], ' ', $rawStatus)) : ucwords($rawState);
-                if (strtolower($statusDisplay) === 'pickup') $statusDisplay = 'Pickedup';
-                if (strtolower($statusDisplay) === 'return') $statusDisplay = 'Returned';
+                if (strtolower($statusDisplay) === 'pickup') $statusDisplay = 'Reserved';
+                if (strtolower($statusDisplay) === 'return') $statusDisplay = 'Pickedup';
             }
 
             $results[] = [
