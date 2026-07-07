@@ -106,6 +106,7 @@
                     <tr>
                         <th class="px-4 py-3 font-medium">Kode Cust</th>
                         <th class="px-4 py-3 font-medium">Nomor SO</th>
+                        <th class="px-4 py-3 font-medium">Status</th>
                         <th class="px-4 py-3 font-medium">Nomor PO</th>
                         <th class="px-4 py-3 font-medium">Nomor Kontrak</th>
                         <th class="px-4 py-3 font-medium">Kontrak Ref</th>
@@ -139,7 +140,20 @@
                     @forelse($rentals as $rental)
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td class="px-4 py-3">{{ $rental->kode_cust }}</td>
-                        <td class="px-4 py-3">{{ $rental->nomor_so }}</td>
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ $rental->nomor_so }}</td>
+                        <td class="px-4 py-3">
+                            @if($rental->status == 'Pickedup' || $rental->status == 'Picked Up')
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Pickedup</span>
+                            @elseif($rental->status == 'Reserved')
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Reserved</span>
+                            @elseif($rental->status == 'Quotation')
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Quotation</span>
+                            @elseif($rental->status == 'Returned')
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">Returned</span>
+                            @else
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">{{ $rental->status ?? '-' }}</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3">{{ $rental->nomor_po }}</td>
                         <td class="px-4 py-3">{{ $rental->nomor_kontrak }}</td>
                         <td class="px-4 py-3">{{ $rental->kontrak_ref }}</td>

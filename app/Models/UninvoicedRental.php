@@ -14,6 +14,7 @@ class UninvoicedRental extends Model
     protected $fillable = [
         'kode_cust',
         'nomor_so',
+        'status',
         'nomor_po',
         'nomor_kontrak',
         'kontrak_ref',

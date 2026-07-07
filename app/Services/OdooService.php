@@ -1655,6 +1655,8 @@ class OdooService
             'partner_id',
             'sale_invoice_period_id',
             'order_line',
+            'rental_status',
+            'state',
         ];
 
         $soData = $this->execute('sale.order', 'read', [$soIdsToFetch, $soFields]);
@@ -1813,9 +1815,30 @@ class OdooService
             // Extract Kode Cust (Now displaying full customer name)
             $kodeCust = $so['partner_id'][1] ?? '';
 
+            $rawStatus = strtolower(trim($so['rental_status'] ?? ''));
+            $rawState = strtolower(trim($so['state'] ?? ''));
+
+            $statusDisplay = '';
+            if ($rawState === 'cancel' || $rawStatus === 'cancel' || $rawStatus === 'cancelled') {
+                $statusDisplay = 'Cancelled';
+            } elseif ($rawStatus === 'pickup' || $rawStatus === 'pickedup' || $rawStatus === 'picked_up') {
+                $statusDisplay = 'Pickedup';
+            } elseif ($rawStatus === 'return' || $rawStatus === 'returned') {
+                $statusDisplay = 'Returned';
+            } elseif ($rawStatus === 'reserved') {
+                $statusDisplay = 'Reserved';
+            } elseif ($rawStatus === 'draft' || $rawStatus === 'sent' || $rawState === 'draft' || $rawState === 'sent') {
+                $statusDisplay = 'Quotation';
+            } else {
+                $statusDisplay = !empty($rawStatus) ? ucwords(str_replace(['_', '-'], ' ', $rawStatus)) : ucwords($rawState);
+                if (strtolower($statusDisplay) === 'pickup') $statusDisplay = 'Pickedup';
+                if (strtolower($statusDisplay) === 'return') $statusDisplay = 'Returned';
+            }
+
             $results[] = [
                 'kode_cust' => $kodeCust === false ? '' : $kodeCust,
                 'nomor_so' => ($so['name'] ?? '') === false ? '' : ($so['name'] ?? ''),
+                'status' => $statusDisplay,
                 'nomor_po' => ($so['client_order_ref'] ?? '') === false ? '' : ($so['client_order_ref'] ?? ''),
                 'nomor_kontrak' => ($so['rental_contract_id'][1] ?? '') === false ? '' : ($so['rental_contract_id'][1] ?? ''),
                 'kontrak_ref' => ($contractMap[$so['rental_contract_id'][0] ?? null]['reference'] ?? '') === false ? '' : ($contractMap[$so['rental_contract_id'][0] ?? null]['reference'] ?? ''),

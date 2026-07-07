@@ -719,10 +719,20 @@ class InvoiceSubscriptionController extends Controller
             ->pluck('transaction_code', 'invoice_name')
             ->toArray();
 
+        // Preload cancelled invoices to exclude them from the report
+        $cancelledInvoices = InvoiceSubscription::whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(invoice_state)'), ['cancel', 'cancelled'])
+            ->whereNotNull('invoice_name')
+            ->where('invoice_name', '!=', '')
+            ->pluck('invoice_name')
+            ->toArray();
+
         $allInvoices = collect();
 
-        $processInvoices = function($invoices) use ($allInvoices, $subscriptionCodes) {
+        $processInvoices = function($invoices) use ($allInvoices, $subscriptionCodes, $cancelledInvoices) {
             foreach ($invoices as $inv) {
+                if (in_array($inv->name, $cancelledInvoices)) {
+                    continue;
+                }
                 $lainLainAmount = null;
                 $lainLainKet = null;
                 

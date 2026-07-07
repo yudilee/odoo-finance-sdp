@@ -19,7 +19,9 @@ class UninvoicedRentalController extends Controller
         $sort = $request->input('sort', 'tanggal_periode_belum_cetak');
         $dir = $request->input('dir', 'desc');
 
-        $query = UninvoicedRental::query();
+        $query = UninvoicedRental::query()->where(function ($q) {
+            $q->whereNull('status')->orWhere('status', '!=', 'Cancelled');
+        });
 
         // Search
         if ($request->filled('search')) {
@@ -40,7 +42,7 @@ class UninvoicedRentalController extends Controller
         }
 
         // Sorting
-        $allowedSorts = ['kode_cust', 'nomor_so', 'nama_user', 'nopol', 'tanggal_periode_belum_cetak', 'kontrak_ref'];
+        $allowedSorts = ['kode_cust', 'nomor_so', 'status', 'nama_user', 'nopol', 'tanggal_periode_belum_cetak', 'kontrak_ref'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'tanggal_periode_belum_cetak';
         }
@@ -144,7 +146,9 @@ class UninvoicedRentalController extends Controller
      */
     public function export(Request $request)
     {
-        $query = UninvoicedRental::query();
+        $query = UninvoicedRental::query()->where(function ($q) {
+            $q->whereNull('status')->orWhere('status', '!=', 'Cancelled');
+        });
 
         // Apply filters to export
         if ($request->filled('search')) {
@@ -167,7 +171,7 @@ class UninvoicedRentalController extends Controller
         $format = $request->input('format', 'csv');
 
         $columns = [
-            'Kode Cust', 'Nomor SO', 'Nomor PO', 'Nomor Kontrak', 'Kontrak Ref', 'Nama user', 'Nopol',
+            'Kode Cust', 'Nomor SO', 'Status', 'Nomor PO', 'Nomor Kontrak', 'Kontrak Ref', 'Nama user', 'Nopol',
             'Model', 'Tahun Mobil', 'Actual Start Rent', 'Actual End Rental', 'Tanggal periode belum cetak',
             'Start Rental Period', 'End Rental Period', 'Price di SO', 'Duration Price', 'Invoice Period', 'Payment Terms', 'Area pemakaian uunit',
             'Chassis', 'Invoice PIC', 'First Invoice date', 'Rental Method',
@@ -187,6 +191,7 @@ class UninvoicedRentalController extends Controller
                 $html .= '<tr>';
                 $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->kode_cust) . '</td>';
                 $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_so) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string)$rental->status) . '</td>';
                 $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_po) . '</td>';
                 $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_kontrak) . '</td>';
                 $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->kontrak_ref) . '</td>';
@@ -245,6 +250,7 @@ class UninvoicedRentalController extends Controller
                 fputcsv($file, [
                     $rental->kode_cust,
                     $rental->nomor_so,
+                    $rental->status,
                     $rental->nomor_po,
                     $rental->nomor_kontrak,
                     $rental->kontrak_ref,

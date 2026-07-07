@@ -331,11 +331,17 @@ class SyncService
 
         $count = 0;
         foreach ($entries as $entry) {
+            if (($entry['status'] ?? '') === 'Cancelled') {
+                UninvoicedRental::where('nomor_so', $entry['nomor_so'])->delete();
+                continue;
+            }
+
             // we update or create by nomor_so since it's grouped by SO
             UninvoicedRental::updateOrCreate(
                 ['nomor_so' => $entry['nomor_so']],
                 [
                     'kode_cust' => $entry['kode_cust'],
+                    'status' => $entry['status'] ?? null,
                     'nomor_po' => $entry['nomor_po'],
                     'nomor_kontrak' => $entry['nomor_kontrak'],
                     'kontrak_ref' => $entry['kontrak_ref'] ?? '',
