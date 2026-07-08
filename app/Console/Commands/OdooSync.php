@@ -84,6 +84,9 @@ class OdooSync extends Command
             return $sync->saveJournalEntries($data);
         }, $dateFrom, $dateTo);
 
+        $this->info('Cleaning up cancelled invoices...');
+        $sync->cleanupCancelledInvoices($odoo, $dateFrom, $dateTo);
+
         $this->info('All modules processed.');
         
         Setting::setValue('odoo_last_sync', now()->format('Y-m-d H:i:s'));

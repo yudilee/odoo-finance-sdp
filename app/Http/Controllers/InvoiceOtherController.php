@@ -131,6 +131,14 @@ class InvoiceOtherController extends Controller
                 ]);
             }
 
+            // Cleanup cancelled invoices
+            try {
+                $syncService = new \App\Services\SyncService();
+                $syncService->cleanupCancelledInvoices($odoo, $request->input('date_from'), $request->input('date_to'));
+            } catch (\Exception $e) {
+                Log::error("Failed to clean up cancelled invoices in getSyncIds: " . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'ids' => $result['ids'],

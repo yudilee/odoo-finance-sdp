@@ -1051,6 +1051,16 @@ class OdooService
             return ['success' => false, 'message' => 'Fetch failed: ' . $e->getMessage(), 'data' => []];
         }
     }
+
+    public function fetchInvoiceRentals(string $dateFrom, string $dateTo): array
+    {
+        $res = $this->getInvoiceRentalIds($dateFrom, $dateTo);
+        if (!$res['success']) {
+            return $res;
+        }
+        return $this->fetchInvoiceRentalsByIds($res['ids']);
+    }
+
     public function getInvoiceProformaIds(string $dateFrom, string $dateTo): array
     {
         try {

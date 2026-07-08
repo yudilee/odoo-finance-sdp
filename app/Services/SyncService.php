@@ -415,4 +415,40 @@ class SyncService
         }
         return $count;
     }
+
+    /**
+     * Clean up cancelled invoices from the local database for a given date range
+     */
+    public function cleanupCancelledInvoices(OdooService $odoo, string $dateFrom, string $dateTo): void
+    {
+        try {
+            $domain = [
+                ['state', '=', 'cancel'],
+                ['invoice_date', '>=', $dateFrom],
+                ['invoice_date', '<=', $dateTo],
+            ];
+            $ids = $odoo->execute('account.move', 'search', [$domain]);
+            if (empty($ids)) {
+                return;
+            }
+
+            $records = $odoo->execute('account.move', 'read', [$ids, ['name']]);
+            $names = [];
+            foreach ($records as $rec) {
+                if (!empty($rec['name'])) {
+                    $names[] = $rec['name'];
+                }
+            }
+
+            if (!empty($names)) {
+                \Illuminate\Support\Facades\Log::info("Pruning cancelled invoices from local database: " . implode(', ', $names));
+                InvoiceRental::whereIn('name', $names)->delete();
+                InvoiceDriver::whereIn('name', $names)->delete();
+                InvoiceOther::whereIn('name', $names)->delete();
+                InvoiceVehicle::whereIn('name', $names)->delete();
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to clean up cancelled invoices: " . $e->getMessage());
+        }
+    }
 }
