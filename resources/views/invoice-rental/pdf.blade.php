@@ -373,7 +373,7 @@
                 }
             }
 
-            if (str_starts_with($invoice->name, 'RINVRS') && $displayLines->isEmpty()) {
+            if (str_starts_with($invoice->name, 'R') && $displayLines->isEmpty()) {
                 $originalInvoice = '';
                 if (preg_match('/(INV[A-Z]+\/\d{4}\/\d{5})/', $invoice->ref ?? '', $m)) {
                     $originalInvoice = $m[1];
@@ -443,7 +443,7 @@
                                     </span>
                                 </td>
                                 <td style="width: 40%;">
-                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'RINVRS') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
+                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'R') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
                                     <div class="page-label" style="visibility: hidden;">
                                         Hal : 1
                                     </div>
@@ -494,7 +494,7 @@
                                         <tr>
                                             <td class="info-label">No. PO</td>
                                             <td class="info-colon">:</td>
-                                            <td>{{ str_starts_with($invoice->name, 'RINVRS') ? '' : ($invoice->ref ?? '') }}</td>
+                                            <td>{{ str_starts_with($invoice->name, 'R') ? '' : ($invoice->ref ?? '') }}</td>
                                         </tr>
                                         <tr>
                                             <td class="info-label">Payment Terms</td>
@@ -524,7 +524,7 @@
                 </tr>
             </thead>
             <tbody>
-                @if(isset($printMode) && $printMode === 'detail' && !str_starts_with($invoice->name, 'RINVRS'))
+                @if(isset($printMode) && $printMode === 'detail' && !str_starts_with($invoice->name, 'R'))
                 <tr>
                     <td></td>
                     <td style="padding-bottom: 2px;">
@@ -577,7 +577,7 @@
                             @endphp
 
                             @if(!$line->is_summary)
-                                @if(str_starts_with($invoice->name, 'RINVRS'))
+                                @if(str_starts_with($invoice->name, 'R'))
                                     @php
                                         $originalInvoice = '';
                                         if (preg_match('/(INV[A-Z]+\/\d{4}\/\d{5})/', $invoice->ref ?? '', $m)) {
@@ -789,7 +789,7 @@
                             $catatanContent = [];
                             $isSummary = isset($printMode) && $printMode === 'summary';
 
-                            if (str_starts_with($invoice->name, 'RINVRS') && !empty($invoice->ref)) {
+                            if (str_starts_with($invoice->name, 'R') && !empty($invoice->ref)) {
                                 $catatanContent[] = nl2br(e(trim($invoice->ref)));
                             }
                             

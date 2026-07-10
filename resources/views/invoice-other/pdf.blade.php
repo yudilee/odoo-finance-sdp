@@ -379,7 +379,7 @@
                                     </span>
                                 </td>
                                 <td style="width: 40%;">
-                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'RINVOT') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
+                                    <div class="invoice-title">{{ str_starts_with($invoice->name, 'R') ? 'CREDIT NOTES' : 'INVOICE' }}</div>
                                     <div class="page-label" style="visibility: hidden;">Hal : 1</div>
                                 </td>
                             </tr>
