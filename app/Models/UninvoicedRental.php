@@ -43,4 +43,19 @@ class UninvoicedRental extends Model
         'address',
         'tax_address',
     ];
+
+    /**
+     * Format a date/timestamp to DD/MMM/YYYY with uppercase month abbreviation (e.g. 01/SEP/2027)
+     */
+    public static function formatDate($value)
+    {
+        if (empty($value)) {
+            return '';
+        }
+        $time = strtotime($value);
+        if ($time === false || $time <= 0) {
+            return (string)$value;
+        }
+        return strtoupper(date('d/M/Y', $time));
+    }
 }

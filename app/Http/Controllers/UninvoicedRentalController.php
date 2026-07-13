@@ -28,11 +28,11 @@ class UninvoicedRentalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_so', 'like', "%{$search}%")
-                  ->orWhere('nama_user', 'like', "%{$search}%")
-                  ->orWhere('kode_cust', 'like', "%{$search}%")
-                  ->orWhere('nopol', 'like', "%{$search}%")
-                  ->orWhere('chassis', 'like', "%{$search}%")
-                  ->orWhere('kontrak_ref', 'like', "%{$search}%");
+                    ->orWhere('nama_user', 'like', "%{$search}%")
+                    ->orWhere('kode_cust', 'like', "%{$search}%")
+                    ->orWhere('nopol', 'like', "%{$search}%")
+                    ->orWhere('chassis', 'like', "%{$search}%")
+                    ->orWhere('kontrak_ref', 'like', "%{$search}%");
             });
         }
 
@@ -53,10 +53,11 @@ class UninvoicedRentalController extends Controller
         $query->orderBy($sort, $dir);
 
         $perPage = $request->input('per_page', 25);
-        if (!in_array($perPage, [10, 25, 50, 100])) $perPage = 25;
+        if (!in_array($perPage, [10, 25, 50, 100]))
+            $perPage = 25;
 
         $rentals = $query->paginate($perPage)->withQueryString();
-        
+
         $autoSyncEnabled = Setting::getValue('uninvoiced_rentals_auto_sync_enabled', 'false') === 'true';
 
         return view('uninvoiced-rentals.index', compact('rentals', 'sort', 'dir', 'perPage', 'autoSyncEnabled'));
@@ -69,7 +70,7 @@ class UninvoicedRentalController extends Controller
     {
         $enabled = $request->boolean('enabled');
         Setting::setValue('uninvoiced_rentals_auto_sync_enabled', $enabled ? 'true' : 'false');
-        
+
         return response()->json([
             'success' => true,
             'enabled' => $enabled
@@ -155,11 +156,11 @@ class UninvoicedRentalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_so', 'like', "%{$search}%")
-                  ->orWhere('nama_user', 'like', "%{$search}%")
-                  ->orWhere('kode_cust', 'like', "%{$search}%")
-                  ->orWhere('nopol', 'like', "%{$search}%")
-                  ->orWhere('chassis', 'like', "%{$search}%")
-                  ->orWhere('kontrak_ref', 'like', "%{$search}%");
+                    ->orWhere('nama_user', 'like', "%{$search}%")
+                    ->orWhere('kode_cust', 'like', "%{$search}%")
+                    ->orWhere('nopol', 'like', "%{$search}%")
+                    ->orWhere('chassis', 'like', "%{$search}%")
+                    ->orWhere('kontrak_ref', 'like', "%{$search}%");
             });
         }
 
@@ -171,11 +172,36 @@ class UninvoicedRentalController extends Controller
         $format = $request->input('format', 'csv');
 
         $columns = [
-            'Kode Cust', 'Nomor SO', 'Status', 'Nomor PO', 'Nomor Kontrak', 'Kontrak Ref', 'Nama user', 'Nopol',
-            'Model', 'Tahun Mobil', 'Actual Start Rent', 'Actual End Rental', 'Tanggal periode belum cetak',
-            'Start Rental Period', 'End Rental Period', 'Price di SO', 'Duration Price', 'Invoice Period', 'Payment Terms', 'Area pemakaian uunit',
-            'Chassis', 'Invoice PIC', 'First Invoice date', 'Rental Method',
-            'Recipient Bank', 'Tax ID', 'ID TKU', 'Kode Transaksi', 'Address', 'Tax Address',
+            'Kode Cust',
+            'Nomor SO',
+            'Status',
+            'Nomor PO',
+            'Nomor Kontrak',
+            'Kontrak Ref',
+            'Nama user',
+            'Nopol',
+            'Model',
+            'Tahun Mobil',
+            'Actual Start Rent',
+            'Actual End Rental',
+            'Tanggal periode belum cetak',
+            'Start Rental Period',
+            'End Rental Period',
+            'Price di SO',
+            'Duration Price',
+            'Invoice Period',
+            'Payment Terms',
+            'Area pemakaian uunit',
+            'Chassis',
+            'Invoice PIC',
+            'First Invoice date',
+            'Rental Method',
+            'Recipient Bank',
+            'Tax ID',
+            'ID TKU',
+            'Kode Transaksi',
+            'Address',
+            'Tax Address',
         ];
 
         if (in_array($format, ['xls', 'xlsx'])) {
@@ -186,63 +212,63 @@ class UninvoicedRentalController extends Controller
                 $html .= '<th style="background-color: #f2f2f2;">' . htmlspecialchars($col) . '</th>';
             }
             $html .= '</tr></thead><tbody>';
-            
+
             foreach ($rentals as $rental) {
                 $html .= '<tr>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->kode_cust) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_so) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->status) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_po) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->nomor_kontrak) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->kontrak_ref) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->nama_user) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->nopol) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->model) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->tahun_mobil) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->start) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->end) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->tanggal_periode_belum_cetak) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)($rental->start_rental_period ? date('d/m/Y', strtotime($rental->start_rental_period)) : '')) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)($rental->end_rental_period ? date('d/m/Y', strtotime($rental->end_rental_period)) : '')) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->price_di_so) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->duration_price) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->invoice_period) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->payment_terms) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->area_pemakaian_unit) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->chassis) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->invoice_pic) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->first_invoice_date) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->rental_method) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->recipient_bank) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->tax_id) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->id_tku) . '</td>';
-                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string)$rental->kode_transaksi) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->address) . '</td>';
-                $html .= '<td>' . htmlspecialchars((string)$rental->tax_address) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->kode_cust) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->nomor_so) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->status) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->nomor_po) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->nomor_kontrak) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->kontrak_ref) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->nama_user) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->nopol) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->model) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->tahun_mobil) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->start)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->end)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->tanggal_periode_belum_cetak)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->start_rental_period)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->end_rental_period)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->price_di_so) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->duration_price) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->invoice_period) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->payment_terms) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->area_pemakaian_unit) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->chassis) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->invoice_pic) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) \App\Models\UninvoicedRental::formatDate($rental->first_invoice_date)) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->rental_method) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->recipient_bank) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->tax_id) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->id_tku) . '</td>';
+                $html .= '<td style="mso-number-format:\'\@\';">' . htmlspecialchars((string) $rental->kode_transaksi) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->address) . '</td>';
+                $html .= '<td>' . htmlspecialchars((string) $rental->tax_address) . '</td>';
                 $html .= '</tr>';
             }
             $html .= '</tbody></table>';
 
             return response($html, 200, [
-                "Content-type"        => "application/vnd.ms-excel",
+                "Content-type" => "application/vnd.ms-excel",
                 "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma"              => "no-cache",
-                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-                "Expires"             => "0"
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
             ]);
         }
 
         // Default CSV
         $filename = "REPORT_UNINVOICED_" . now()->format('YmdHis') . '.csv';
         $headers = array(
-            "Content-type"        => "text/csv",
+            "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
         );
 
-        $callback = function() use($rentals, $columns) {
+        $callback = function () use ($rentals, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
@@ -258,11 +284,11 @@ class UninvoicedRentalController extends Controller
                     $rental->nopol,
                     $rental->model,
                     $rental->tahun_mobil,
-                    $rental->start,
-                    $rental->end,
-                    $rental->tanggal_periode_belum_cetak,
-                    $rental->start_rental_period ? date('d/m/Y', strtotime($rental->start_rental_period)) : '',
-                    $rental->end_rental_period ? date('d/m/Y', strtotime($rental->end_rental_period)) : '',
+                    \App\Models\UninvoicedRental::formatDate($rental->start),
+                    \App\Models\UninvoicedRental::formatDate($rental->end),
+                    \App\Models\UninvoicedRental::formatDate($rental->tanggal_periode_belum_cetak),
+                    \App\Models\UninvoicedRental::formatDate($rental->start_rental_period),
+                    \App\Models\UninvoicedRental::formatDate($rental->end_rental_period),
                     $rental->price_di_so,
                     $rental->duration_price,
                     $rental->invoice_period,
@@ -270,7 +296,7 @@ class UninvoicedRentalController extends Controller
                     $rental->area_pemakaian_unit,
                     $rental->chassis,
                     $rental->invoice_pic,
-                    $rental->first_invoice_date,
+                    \App\Models\UninvoicedRental::formatDate($rental->first_invoice_date),
                     $rental->rental_method,
                     $rental->recipient_bank,
                     $rental->tax_id,
