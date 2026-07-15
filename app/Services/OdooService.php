@@ -1929,4 +1929,136 @@ class OdooService
             return ['success' => false, 'message' => $e->getMessage(), 'ids' => []];
         }
     }
+
+    /**
+     * Get Odoo IDs for credit notes in a date range
+     */
+    public function getCreditNoteIds(string $dateFrom, string $dateTo): array
+    {
+        $domain = [
+            ['move_type', '=', 'out_refund'],
+            ['invoice_date', '>=', $dateFrom],
+            ['invoice_date', '<=', $dateTo],
+        ];
+
+        try {
+            $ids = $this->execute('account.move', 'search', [$domain]);
+            return [
+                'success' => true,
+                'ids' => $ids,
+                'count' => count($ids)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Fetch credit notes by IDs
+     */
+    public function fetchCreditNotesByIds(array $moveIds): array
+    {
+        try {
+            if (empty($moveIds)) {
+                return ['success' => true, 'data' => []];
+            }
+
+            $exportFields = [
+                'name',
+                'partner_id/name',
+                'invoice_date',
+                'invoice_date_due',
+                'l10n_id_tax_number',
+                'amount_untaxed',
+                'amount_tax',
+                'amount_total',
+                'payment_state',
+                'state',
+                'ref',
+                'invoice_payments_widget',
+                'invoice_line_ids/name',
+                'invoice_line_ids/sale_order_id/name',
+            ];
+
+            $entries = [];
+            $chunkSize = 500;
+            $moveIdsChunks = array_chunk($moveIds, $chunkSize);
+
+            foreach ($moveIdsChunks as $chunk) {
+                $result = $this->execute('account.move', 'export_data', [$chunk, $exportFields]);
+                if (!isset($result['datas'])) {
+                    continue;
+                }
+
+                $currentEntry = null;
+                foreach ($result['datas'] as $row) {
+                    $moveName = $row[0] ?? '';
+                    if (!empty($moveName)) {
+                        if ($currentEntry !== null) {
+                            $uniqueLines = array_unique(array_filter($currentEntry['line_descriptions']));
+                            $formattedLines = [];
+                            $idx = 1;
+                            foreach ($uniqueLines as $line) {
+                                $formattedLines[] = "{$idx}. {$line}";
+                                $idx++;
+                            }
+                            $currentEntry['description'] = implode("\n", $formattedLines);
+                            unset($currentEntry['line_descriptions']);
+                            $entries[] = $currentEntry;
+                        }
+                        $currentEntry = [
+                            'name' => $moveName,
+                            'partner_name' => $row[1] ?? '',
+                            'invoice_date' => $row[2] ?? null,
+                            'invoice_date_due' => $row[3] ?? null,
+                            'tax_number' => $row[4] ?? '',
+                            'amount_untaxed' => (float) ($row[5] ?? 0),
+                            'amount_tax' => (float) ($row[6] ?? 0),
+                            'amount_total' => (float) ($row[7] ?? 0),
+                            'payment_state' => $row[8] ?? '',
+                            'state' => $row[9] ?? '',
+                            'ref' => $row[10] ?? '',
+                            'payment_date' => $this->extractLatestPaymentDate($row[11] ?? null),
+                            'line_descriptions' => [],
+                        ];
+                    }
+
+                    if ($currentEntry !== null) {
+                        $lineDesc = $row[12] ?? '';
+                        $saleOrder = $row[13] ?? '';
+                        if (!empty($lineDesc)) {
+                            $fullDesc = !empty($saleOrder) ? "[$saleOrder] $lineDesc" : $lineDesc;
+                            $currentEntry['line_descriptions'][] = $fullDesc;
+                        }
+                    }
+                }
+
+                if ($currentEntry !== null) {
+                    $uniqueLines = array_unique(array_filter($currentEntry['line_descriptions']));
+                    $formattedLines = [];
+                    $idx = 1;
+                    foreach ($uniqueLines as $line) {
+                        $formattedLines[] = "{$idx}. {$line}";
+                        $idx++;
+                    }
+                    $currentEntry['description'] = implode("\n", $formattedLines);
+                    unset($currentEntry['line_descriptions']);
+                    $entries[] = $currentEntry;
+                }
+            }
+
+            return [
+                'success' => true,
+                'data' => $entries
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
 }

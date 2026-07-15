@@ -16,6 +16,7 @@ use App\Http\Controllers\InvoiceSubscriptionController;
 use App\Http\Controllers\UninvoicedRentalController;
 use App\Http\Controllers\PrintLogController;
 use App\Http\Controllers\Admin\PrintLogController as AdminPrintLogController;
+use App\Http\Controllers\CreditNoteController;
 // use App\Http\Controllers\Admin\PrintLogController;
 
 // ──────────────────────────────────────────────
@@ -160,6 +161,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/export', [InvoiceSubscriptionController::class, 'export'])->name('export');
         Route::get('/accounting-report', [InvoiceSubscriptionController::class, 'accountingReport'])->name('accounting-report');
         Route::post('/accounting-report/export', [InvoiceSubscriptionController::class, 'exportAccountingReport'])->name('accounting-report.export');
+    });
+
+    // Credit Notes Report
+    Route::group(['prefix' => 'credit-notes', 'as' => 'credit-notes.', 'middleware' => 'role:invoice'], function () {
+        Route::get('/', [CreditNoteController::class, 'index'])->name('index');
+        Route::post('/sync-ids', [CreditNoteController::class, 'getSyncIds'])->name('sync-ids');
+        Route::post('/sync-batch', [CreditNoteController::class, 'syncBatch'])->name('sync-batch');
+        Route::post('/export', [CreditNoteController::class, 'export'])->name('export');
     });
 
     // Uninvoiced Rentals

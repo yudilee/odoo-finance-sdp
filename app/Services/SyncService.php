@@ -417,6 +417,38 @@ class SyncService
     }
 
     /**
+     * Save Credit Notes
+     */
+    public function saveCreditNotes(array $entries): int
+    {
+        $count = 0;
+        foreach ($entries as $entry) {
+            if (empty($entry['name'])) {
+                continue;
+            }
+             \App\Models\CreditNote::updateOrCreate(
+                ['name' => $entry['name']],
+                [
+                    'partner_name' => $entry['partner_name'],
+                    'ref' => $entry['ref'] ?? null,
+                    'invoice_date' => $entry['invoice_date'] ?: null,
+                    'invoice_date_due' => $entry['invoice_date_due'] ?: null,
+                    'payment_date' => $entry['payment_date'] ?: null,
+                    'description' => $entry['description'] ?? null,
+                    'tax_number' => $entry['tax_number'] ?? null,
+                    'amount_untaxed' => $entry['amount_untaxed'] ?? 0,
+                    'amount_tax' => $entry['amount_tax'] ?? 0,
+                    'amount_total' => $entry['amount_total'] ?? 0,
+                    'payment_state' => $entry['payment_state'] ?? null,
+                    'state' => $entry['state'] ?? null,
+                ]
+            );
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
      * Clean up cancelled invoices from the local database for a given date range
      */
     public function cleanupCancelledInvoices(OdooService $odoo, string $dateFrom, string $dateTo): void
