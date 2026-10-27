@@ -292,7 +292,7 @@
                                         $isPdf = request()->is('*/pdf');
                                         $logoSource = $isPdf ? public_path('images/logo.png') : asset('images/logo.png');
                                     @endphp
-                                    <img src="{{ $logoSource }}" style="max-height: 45px; max-width: 180px; margin-bottom: 5px;" alt="Logo"><br>
+                                    <img src="{{ $logoSource }}" style="max-height: 25px; max-width: 120px; margin-bottom: 5px;" alt="Logo"><br>
                                     <span class="company-name">PT. SURYA DARMA PERKASA</span><br>
                                     <span class="company-address">
                                         JL. DAAN MOGOT KM.1 NO. 99, JAKARTA BARAT<br>

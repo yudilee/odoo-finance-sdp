@@ -41,8 +41,8 @@
             letter-spacing: -0.5px;
         }
         .logo-img {
-            max-height: 40px;
-            max-width: 160px;
+            max-height: 24px;
+            max-width: 115px;
         }
         .info-label {
             font-weight: bold;
