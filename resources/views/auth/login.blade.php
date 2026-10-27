@@ -11,7 +11,7 @@
     <div class="w-full max-w-md">
         {{-- Logo --}}
         <div class="text-center mb-8">
-            <img src="{{ asset('images/logo.png') }}" alt="Harent Logo" class="mx-auto h-20 mb-4 object-contain">
+            <img src="{{ asset('images/logo.png') }}" alt="Harent Logo" class="mx-auto h-14 mb-4 object-contain">
             <p class="text-slate-400 mt-2">Sign in to your account</p>
         </div>
 

@@ -180,8 +180,8 @@
             <td style="width:60%; vertical-align:middle;">
                 <table>
                     <tr>
-                        <td style="width:58px; vertical-align:middle;">
-                            <img src="{{ $logoSrc }}" style="max-height:40px; max-width:58px;" alt="Logo">
+                        <td style="width:100px; vertical-align:middle;">
+                            <img src="{{ $logoSrc }}" style="max-height:35px; max-width:100px;" alt="Logo">
                         </td>
                         <td style="vertical-align:middle; padding-left:8px;">
                             <div class="company-name">PT. SURYA DARMA PERKASA</div>
