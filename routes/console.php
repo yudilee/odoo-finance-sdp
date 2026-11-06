@@ -39,7 +39,7 @@ Illuminate\Support\Facades\Schedule::command('db:maintenance')->dailyAt('03:00')
 // Auto Sync Uninvoiced Rentals every 30 minutes
 Illuminate\Support\Facades\Schedule::command('app:sync-uninvoiced-rentals')->when(function () {
     return \App\Models\Setting::getValue('uninvoiced_rentals_auto_sync_enabled', 'false') === 'true';
-})->everyThirtyMinutes()->runInBackground();
+})->everyThirtyMinutes();
 
 // Automatic Database Backups (Linked to UI Settings)
 Illuminate\Support\Facades\Schedule::command('app:backup-db')->when(function () {

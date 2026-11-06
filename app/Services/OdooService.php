@@ -2240,7 +2240,7 @@ class OdooService
             $domain = [
                 ['rental_type', '=', 'regular'],
                 ['state', '=', 'sale'],
-                ['invoice_status', '=', 'to invoice'],
+                ['invoice_status', 'in', ['to invoice', 'invoiced']],
                 ['rental_status', '!=', 'cancel']
             ];
             $candidateSos = $this->execute('sale.order', 'search_read', [$domain], [
@@ -2277,7 +2277,7 @@ class OdooService
             $candidateSos = [];
             foreach ($records as $r) {
                 $soNames[] = $r['name'];
-                if (($r['invoice_status'] ?? '') === 'to invoice' && ($r['rental_status'] ?? '') !== 'cancel') {
+                if (in_array($r['invoice_status'] ?? '', ['to invoice', 'invoiced']) && ($r['rental_status'] ?? '') !== 'cancel') {
                     $candidateSos[] = $r;
                 }
             }
@@ -2660,7 +2660,7 @@ class OdooService
             $domain = [
                 ['name', 'like', 'S/'],
                 ['state', '=', 'sale'],
-                ['invoice_status', '=', 'to invoice']
+                ['invoice_status', 'in', ['to invoice', 'invoiced']]
             ];
             $candidateSos = $this->execute('sale.order', 'search_read', [$domain], [
                 'fields' => ['id', 'name', 'invoice_ids', 'lot_serial_names'],
@@ -2696,7 +2696,7 @@ class OdooService
             $candidateSos = [];
             foreach ($records as $r) {
                 $soNames[] = $r['name'];
-                if (($r['invoice_status'] ?? '') === 'to invoice') {
+                if (in_array($r['invoice_status'] ?? '', ['to invoice', 'invoiced'])) {
                     $candidateSos[] = $r;
                 }
             }

@@ -100,8 +100,7 @@
                 </button>
             </form>
 
-            @if($activeTab === 'long_term')
-            {{-- Auto Sync Toggle (Long Term Only) --}}
+            {{-- Auto Sync Toggle (All Tabs) --}}
             <div class="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700">
                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Auto Sync</span>
                 <button type="button" 
@@ -113,7 +112,6 @@
                           class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
                 </button>
             </div>
-            @endif
 
             {{-- Fast Sync Button --}}
             <button @click="syncDataFast" :disabled="isSyncing" 
