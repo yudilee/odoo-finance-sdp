@@ -1934,6 +1934,32 @@ class OdooService
             }
         }
 
+        // Fetch latest posted non-reversed period end date for each SO to bypass historical ghost gaps
+        $latestPostedEndBySo = [];
+        try {
+            $postedPeriods = $this->execute('rental.period.invoice', 'search_read', [
+                [
+                    ['rental_order_id', 'in', $soIds],
+                    ['invoice_id.state', '=', 'posted'],
+                    ['invoice_id.payment_state', '!=', 'reversed'],
+                    ['price_unit', '>', 0]
+                ]
+            ], [
+                'fields' => ['rental_order_id', 'end_rental_period_date'],
+                'order' => 'end_rental_period_date desc'
+            ]);
+
+            foreach ($postedPeriods as $pp) {
+                $ppSoId = $pp['rental_order_id'][0] ?? null;
+                $ppEnd = $pp['end_rental_period_date'] ?? null;
+                if ($ppSoId && $ppEnd && !isset($latestPostedEndBySo[$ppSoId])) {
+                    $latestPostedEndBySo[$ppSoId] = $ppEnd;
+                }
+            }
+        } catch (\Exception $e) {
+            $latestPostedEndBySo = [];
+        }
+
         // Group by rental_order_id and find the earliest valid period based on start_rental_period_date
         $grouped = [];
         foreach ($periods as $period) {
@@ -1978,6 +2004,14 @@ class OdooService
             } elseif ($invMove && $invMove['state'] === 'posted' && ($invMove['payment_state'] ?? '') !== 'reversed') {
                 // Period already has a posted, non-reversed invoice -> skip
                 continue;
+            }
+
+            // Safety guard: If an SO already has a posted invoice for later periods,
+            // ignore old ghost periods that ended on or before that latest posted period end date.
+            if (isset($latestPostedEndBySo[$soId]) && !empty($period['end_rental_period_date'])) {
+                if ($period['end_rental_period_date'] <= $latestPostedEndBySo[$soId]) {
+                    continue;
+                }
             }
 
             if (!isset($grouped[$soId]) || $period['start_rental_period_date'] < $grouped[$soId]['start_rental_period_date']) {
